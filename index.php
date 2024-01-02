@@ -1,75 +1,6 @@
 <?php
-
-// $server = '172.19.0.31';
-// $username = 'Programador4';
-// $password = 'SAPFrogs13';
-// $endpoint = 'https://api.onebeat.co/v1/exporters/targets?account_id=4756a8d4-ce6c-47b5-b4e3-fa924fe71d88';
-// $token = "Kze7r3s6oHvHBgIfpOlZD5RFTHZqHPEhrx0h7ngiJnoHq9yBUYjP7zYXtigTRKFCEIZ3YwSXoNkHsL5qVFLxfNiemzhoHsX3J7fZPVtqVWAUef6Ag96eWAXszJKeyxzweCJ7frvnDLrrxTrh1fBYYhFCBgl0F1AQEfZhqRcwXhp5fTSOdnhJbU9YPNG7h6R6exkGiCOaDt5IwQsGxn4m7X2q3IFaBGDv9cO85dbxdPmjorTQTbXyayUii9cYF4Zp";
-
-// // Inicio de sesión de cURL
-// $ch = curl_init();
-
-
-// curl_setopt($ch, CURLOPT_URL, $endpoint);
-// curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-// curl_setopt($ch, CURLOPT_HTTPHEADER, [
-//     "Authorization: Bearer $token",
-//     "Content-Type: application/json",
-// ]);
-
-// $response = curl_exec($ch);
-
-// if (curl_errno($ch)) {
-//     $error_msg = curl_error($ch);
-//     echo 'Error al conectarse al Endpoint';
-// } else {
-//     curl_close($ch);
-// }
-
-// $data = json_decode($response, true);
-
-function fetchDataFromAPI($token, $endpoint)
-{
-    $ch = curl_init();
-
-    curl_setopt($ch, CURLOPT_URL, $endpoint);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        "Authorization: Bearer $token",
-        "Content-Type: application/json",
-    ]);
-
-    $response = curl_exec($ch);
-
-    if (curl_errno($ch)) {
-        $error_msg = curl_error($ch);
-        echo 'Error al conectarse al Endpoint';
-        return null;
-    } else {
-        curl_close($ch);
-    }
-
-    return json_decode($response, true);
-}
-
-function getDatabaseConnection()
-{
-    $server = '172.19.0.31';
-    $user = 'Programador4';
-    $password = 'SAPFrogs13';
-    $database = 'Siti';
-
-    try {
-        // Conexión PDO a SQL Server usando ODBC
-        $dsn = "sqlsrv:Server=$server;Database=$database;";
-        $conn = new PDO($dsn, $user, $password);
-        $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-        return $conn;
-    } catch (PDOException $e) {
-        die("Error de conexión a la base de datos: " . $e->getMessage());
-    }
-}
+require('dbconnection.php');
+require('getapi.php');
 
 // Datos de conexión a SQL
 $token = "Kze7r3s6oHvHBgIfpOlZD5RFTHZqHPEhrx0h7ngiJnoHq9yBUYjP7zYXtigTRKFCEIZ3YwSXoNkHsL5qVFLxfNiemzhoHsX3J7fZPVtqVWAUef6Ag96eWAXszJKeyxzweCJ7frvnDLrrxTrh1fBYYhFCBgl0F1AQEfZhqRcwXhp5fTSOdnhJbU9YPNG7h6R6exkGiCOaDt5IwQsGxn4m7X2q3IFaBGDv9cO85dbxdPmjorTQTbXyayUii9cYF4Zp";
@@ -119,45 +50,63 @@ if ($data === null) {
 }
 
 // Obtener conexión a la base de datos
-$conn = getDatabaseConnection();
+$conn = getDatabaseConnection('172.19.0.31', 'Programador4', 'SAPFrogs13', 'Siti');
 
 // Realizar la consulta SQL para obtener el buffer actual
-$sql = "SELECT ItemCode,Whscode,Buffer FROM (SELECT LEFT(ItemCode,20) ITEMCODE, LEFT(WhsCode,8) WhsCode, Buffer,Empresa, ROW_NUMBER() OVER (PARTITION BY ItemCode, WhsCode,Empresa ORDER BY ItemCode, WhsCode, Fecha DESC, Hora DESC) Num FROM SITI..BYS_Buffer WITH (NOLOCK) WHERE Fecha <= GETDATE() and Empresa = 'BDGRUPOS_BUENA' AND whscode in (select location from stock_locations) ) AS Z WHERE Z.NUM=1;";
+$sql = "SELECT ItemCode,Whscode,Buffer FROM (SELECT LEFT(ItemCode,20) ITEMCODE, LEFT(WhsCode,8) WhsCode, Buffer,Empresa, ROW_NUMBER() OVER (PARTITION BY ItemCode, WhsCode,Empresa ORDER BY ItemCode, WhsCode, Fecha DESC, Hora DESC) Num FROM SITI..BYS_Buffer WITH (NOLOCK) WHERE Fecha <= GETDATE() and Empresa = 'BDGRUPOS_BUENA' AND whscode in (select location from onebeat_stock_locations) ) AS Z WHERE Z.NUM=1;";
 // $sql = "SELECT TOP 20 * FROM stock_locations;";
 $bufferResult = $conn->query($sql);
 
-if ($bufferResult) {
-    // Inicializar un array para almacenar los datos del buffer
-    $bufferData = [];
-
-    // Procesar los resultados del buffer actual
-    while ($row = $bufferResult->fetch(PDO::FETCH_ASSOC)) {
-        // Almacenar datos en el array bufferData
-        $bufferData[$row['ItemCode']][$row['Whscode']] = $row['Buffer'];
-    }
-} else {
-    // Manejar errores en la consulta SQL
+if (!$bufferResult) {
     echo "Error en la consulta SQL: " . print_r($conn->errorInfo(), true);
+    exit;
 }
 
-// Cerrar la conexión a la base de datos
+// Inicializar un array para almacenar los datos del buffer
+$bufferData = [];
+
+// Procesar los resultados del buffer actual
+while ($row = $bufferResult->fetch(PDO::FETCH_ASSOC)) {
+    // Almacenar datos en el array bufferData
+    $bufferData[strtoupper($row['ItemCode'])][strtoupper($row['Whscode'])] = $row['Buffer'];
+}
+
 $conn = null;
 
-// Combina los datos del buffer de la API y del buffer de la sentencia SQL
 $combinedData = [];
-foreach ($data['data'] as $apiItem) {
-    $combinedDataItem = $apiItem;
-    $warehouse = $apiItem['locations_external_id'];
-    $sku = $apiItem['skus_external_id'];
+$limit = 20;
 
-    if (isset($bufferDataSQL[$sku][$warehouse])) {
-        $combinedDataItem['buffer_sql'] = $bufferDataSQL[$sku][$warehouse];
-    } else {
-        $combinedDataItem['buffer_sql'] = 0;
+foreach ($data['data'] as $apiItem) {
+    $sku = strtoupper($apiItem['skus_external_id']);
+    $warehouse = strtoupper($apiItem['locations_external_id']);
+
+    // Set a default buffer value
+    $bufferValue = 6;
+
+    // Check if buffer data exists for the SKU
+    if (isset($bufferData[$sku])) {
+        // Iterate over warehouses for the given SKU
+        foreach ($bufferData[$sku] as $bufferWarehouse => $value) {
+            // Check if the current warehouse matches the one in the API data
+            if ($warehouse === $bufferWarehouse) {
+                // Assign buffer value to the API data
+                $bufferValue = $value;
+                break; // Exit the loop once a match is found
+            }
+        }
     }
 
-    $combinedData[] = $combinedDataItem;
+    // Assign buffer value to the API data
+    $apiItem['buffer_value'] = $bufferValue;
+
+    // Add the combined data to the result array
+    $combinedData[] = $apiItem;
 }
+
+// // Print debug information
+// echo '<pre>';
+// print_r($bufferData);
+// echo '</pre>';
 
 // Gestión de la paginación ----------------------------------------------------------------
 // Número de registros por página
@@ -251,7 +200,14 @@ $currentPageData = array_slice($filteredData, $startIndex, $recordsPerPage);
         <tbody>
             <?php
             $limit = 20;
-            foreach ($combinedData as $item) { ?>
+            foreach ($combinedData as $item) {
+                // Obtener el valor del buffer de la base de datos SQL
+                $bufferValue = $item['buffer_value'];
+
+                // Calcular la diferencia
+                $diferencia = $item['pack_constraint'] - $bufferValue;
+
+                ?>
                 <tr class="justify-content-center">
                     <td>
                         <?= $item['locations_external_id'] ?>
@@ -266,48 +222,21 @@ $currentPageData = array_slice($filteredData, $startIndex, $recordsPerPage);
                         <?= $item['pack_constraint'] ?>
                     </td>
                     <td>
-                        <?= $item['buffer_sql'] ?>
+                        <?= $bufferValue ?>
                     </td>
-                    <!-- Calcular la diferencia -->
-                    <?php $diferencia = $item['pack_constraint'] - $item['buffer_sql']; ?>
                     <td>
                         <?= $diferencia ?>
                     </td>
                 </tr>
-                <?php $limit--;
+                <?php
+                $limit--;
                 if ($limit === 0) {
                     break;
                 }
-            } ?>
+            }
+            ?>
         </tbody>
     </table>
-
-    <table border="1" class="table m-5">
-        <thead>
-            <th>ItemCode</th>
-            <th>Whscode</th>
-            <th>Buffer</th>
-        </thead>
-        <tbody>
-            <?php foreach ($bufferData as $itemCode => $whsData) { ?>
-                <?php foreach ($whsData as $whscode => $bufferValue) { ?>
-                    <tr class="justify-content-center">
-                        <td>
-                            <?= $itemCode ?>
-                        </td>
-                        <td>
-                            <?= $whscode ?>
-                        </td>
-                        <td>
-                            <?= $bufferValue ?>
-                        </td>
-                    </tr>
-                <?php } ?>
-            <?php } ?>
-        </tbody>
-    </table>
-
-
     <ul class="pagination justify-content-center">
         <!-- Botón "Previous" -->
         <li class="page-item <?= $currentPage == 1 ? 'disabled' : '' ?>">
