@@ -87,26 +87,8 @@ $filteredData = array_filter($combinedData, function ($item) use ($searchTerm) {
 
 $filteredDataPaginado = array_slice($filteredData, $offset, $registrosPorPagina);
 
-function exportProduct($productResult)
-{
-    $timestamp = time();
-    $filename = 'Export_' . $timestamp . '.xls';
-
-    header("Content-Type: application/vnd.ms-excel");
-    header("Content-Disposition: attachment; filename=\"$filename\"");
-
-    $heading = false;
-    if (!empty($productResult)) {
-        foreach ($productResult as $row) {
-            if (!$heading) {
-                // display field/column names as a first row
-                echo implode("\t", array_keys($row)) . "\n";
-                $heading = true;
-            }
-            echo implode("\t", array_values($row)) . "\n";
-        }
-    }
-    exit;
+if (isset($_POST['export_excel'])) {
+    exportToCSV($filteredData);
 }
 ?>
 
@@ -230,8 +212,10 @@ function exportProduct($productResult)
     </div>
 
     <div class="d-flex justify-content-center mt-3">
-        <button type="button" class="btn btn-success m-2"">Exportar a Excel</button>
-        <button type=" button" class="btn btn-danger m-2">Exportar a PDF</button>
+        <form method="post">
+            <button type="submit" name="export_excel" class="btn btn-success m-2">Exportar a Excel</button>
+        </form>
+        <button type="button" class="btn btn-danger m-2">Exportar a PDF</button>
     </div>
 
 </body>

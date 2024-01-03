@@ -1,25 +1,34 @@
 <?php
-// function exportProduct($productResult)
-// {
-//     $timestamp = time();
-//     $filename = 'Export_' . $timestamp . '.xls';
+// Función para generar y exportar datos a un archivo CSV
+function exportToCSV($data) {
+    $timestamp = time();
+    print_r($timestamp);
+    $filename = 'Export_' . $timestamp . '.csv';
 
-//     header("Content-Type: application/vnd.ms-excel");
-//     header("Content-Disposition: attachment; filename=\"$filename\"");
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
 
-//     echo '<pre>';
-//     print_r($filename);
-//     echo '</pre>';
+    $output = fopen('php://output', 'w');
 
-//     $isPrintHeader = false;
+    fprintf($output, chr(0xEF) . chr(0xBB) . chr(0xBF));
+    fputcsv($output, array('Warehouse', 'SKU', 'SKU name', 'Pack Constraint', 'Buffer', 'Diferencia'));
 
-//     foreach ($productResult as $row) {
-//         if (!$isPrintHeader) {
-//             echo implode("\t", array_keys($row)) . "\n";
-//             $isPrintHeader = true;
-//         }
-//         echo implode("\t", array_values($row)) . "\n";
-//     }
-//     exit();
-// }
+    // Escribe los datos al archivo CSV
+    foreach ($data as $item) {
+        $bufferValue = isset($item['buffer_sql']) ? $item['buffer_sql'] : 0;
+        $diferencia = $item['pack_constraint'] - $bufferValue;
+        $row = array(
+            $item['locations_external_id'],
+            $item['skus_external_id'],
+            $item['sku_name'],
+            $item['pack_constraint'],
+            $bufferValue,
+            $diferencia
+        );
+        fputcsv($output, $row);
+    }
+    fclose($output);
+    exit;
+}
+
 ?>
