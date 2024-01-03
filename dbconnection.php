@@ -1,11 +1,6 @@
 <?php
-function getDatabaseConnection($_server, $_user, $_password, $_database)
+function getDatabaseConnection($server, $user, $password, $database)
 {
-    $server = $_server;
-    $user = $_user;
-    $password = $_password;
-    $database = $_database;
-
     try {
         // Conexión PDO a SQL Server usando ODBC
         $dsn = "sqlsrv:Server=$server;Database=$database;";
