@@ -137,18 +137,23 @@ function exportProduct($productResult)
         por almacén</h1>
 
     <!-- Barra de búsqueda -->
-    <div class="input-group offset-md-8">
+    <div class="input-group offset-md-10 w-80">
         <form action="" method="GET">
-            <input type="text" class="form-control w-100" id="searchInput" name="search"
-                placeholder="Buscar por SKU, SKU name o Warehouse" onkeyup="mayus(this);" value="<?= $searchTerm ?>">
-            <button type="submit" class="btn btn-primary">Buscar</button>
+            <div class="input-group w-100">
+                <input type="text" class="form-control" id="searchInput" name="search"
+                    placeholder="SKU/SKU name/Wharehouse" onkeyup="mayus(this);" value="<?= $searchTerm ?>">
+                <div class="input-group-append">
+                    <button type="submit" class="btn btn-primary">Buscar</button>
+                </div>
+            </div>
         </form>
     </div>
+
 
     <!--Tabla de datos -->
     <table border="1" class="table m-5" id="dataTable">
         <thead>
-            <th>Warehouse</th>
+            <th>Wharehouse</th>
             <th>SKU</th>
             <th>SKU name</th>
             <th>Pack Constraint</th>
@@ -241,8 +246,8 @@ function exportProduct($productResult)
     });
 
     function mayus(e) {
-            e.value = e.value.toUpperCase();
-        }
+        e.value = e.value.toUpperCase();
+    }
 </script>
 
 </html>
