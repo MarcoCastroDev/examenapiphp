@@ -18,14 +18,14 @@ $data = fetchDataFromAPI($token, $endpoint);
 // Obtener conexión a la base de datos
 $conn = getDatabaseConnection($server, $user, $password, $database);
 
-// Configuración de paginación
-$registrosPorPagina = 30;
-$paginaActual = isset($_GET['pagina']) ? $_GET['pagina'] : 1;
-$offset = ($paginaActual - 1) * $registrosPorPagina;
-
 // Realizar la consulta SQL para obtener el buffer actual
 $sql = "SELECT ItemCode,Whscode,Buffer FROM (SELECT LEFT(ItemCode,20) ITEMCODE, LEFT(WhsCode,8) WhsCode, Buffer,Empresa, ROW_NUMBER() OVER (PARTITION BY ItemCode, WhsCode,Empresa ORDER BY ItemCode, WhsCode, Fecha DESC, Hora DESC) Num FROM SITI..BYS_Buffer WITH (NOLOCK) WHERE Fecha <= GETDATE() and Empresa = 'BDGRUPOS_BUENA' AND whscode in (select location from onebeat_stock_locations) ) AS Z WHERE Z.NUM=1;";
 $bufferResult = $conn->query($sql);
+
+// Configuración de paginación
+$registrosPorPagina = 10;
+$paginaActual = isset($_GET['pagina']) ? $_GET['pagina'] : 1;
+$offset = ($paginaActual - 1) * $registrosPorPagina;
 
 if (!$bufferResult) {
     echo "Error en la consulta SQL: " . print_r($conn->errorInfo(), true);
@@ -40,6 +40,9 @@ while ($row = $bufferResult->fetch(PDO::FETCH_ASSOC)) {
     // Almacenar datos en el array bufferData
     $bufferData[strtoupper($row['ItemCode'])][strtoupper($row['Whscode'])] = $row['Buffer'];
 }
+// echo '<pre>';
+// print_r($bufferData);
+// echo '</pre>';
 
 // Crear arreglo combinado con datos de API y de BD
 $combinedData = [];
@@ -63,6 +66,17 @@ foreach ($data['data'] as $apiItem) {
     }
     $combinedData[] = $combinedDataItem;
 }
+// echo '<pre>';
+// print_r($combinedData);
+// echo '</pre>';
+
+// Función de comparación para usort
+function compareWarehouses($a, $b)
+{
+    return strcmp($a['locations_external_id'], $b['locations_external_id']);
+}
+// Ordenar el array por el campo "Warehouse"
+usort($combinedData, 'compareWarehouses');
 
 // Paginar el array $combinedData
 $combinedDataPaginado = array_slice($combinedData, $offset, $registrosPorPagina);
@@ -112,11 +126,13 @@ if (isset($_POST['export_pdf'])) {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
         crossorigin="anonymous"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/bs5/dt-1.11.6/datatables.min.css" />
+    <script type="text/javascript" src="https://cdn.datatables.net/v/bs5/dt-1.11.6/datatables.min.js"></script>
 </head>
 
 <body>
     <!-- Barra de navegación -->
-    <nav class="navbar bg-dark justify-content-center w-100">
+    <nav class=" navbar bg-dark justify-content-center w-100">
         <img src="https://senorfrogs.com/es/wp-content/uploads/sites/3/elementor/thumbs/SF_MexicanFood_Logo-pj9g6cyhnmoz63fbv9hov658qdq4jeeccosiqqi2ve.png"
             alt="" class="navbar-brand m-2">
     </nav>
@@ -125,21 +141,32 @@ if (isset($_POST['export_pdf'])) {
         por almacén</h1>
 
     <!-- Barra de búsqueda -->
-    <div class="input-group offset-md-10 w-80">
+    <div class="input-group offset-md-8 w-100">
+        <div class="dropdown">
+            <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown"
+                aria-expanded="false">
+                <i class="fas fa-file-export"></i> Exportar
+            </button>
+            <ul class="dropdown-menu">
+                <form method="post">
+                    <button type="submit" name="export_excel" class="btn dropdown-item"><i class="fas fa-file-csv"
+                            style="color: #217346;"></i> Excel</button>
+                    <button type="submit" name="export_pdf" class="btn dropdown-item"><i class="fas fa-file-pdf"
+                            style="color: #ff4343;"></i> PDF</button>
+                </form>
+            </ul>
+        </div>
         <form action="" method="GET">
-            <div class="input-group w-100">
-                <input type="text" class="form-control" id="searchInput" name="search"
-                    placeholder="SKU/SKU name/Wharehouse" onkeyup="mayus(this);" value="<?= $searchTerm ?>">
-                <div class="input-group-append">
-                    <button type="submit" class="btn btn-primary">Buscar</button>
-                </div>
+            <div class="input-group ms-2" style="width: 118% ">
+                <input type="text" class="form-control w-20" id="searchInput" name="search"
+                    placeholder="SKU / SKU name / Wharehouse" onkeyup="mayus(this);" value="<?= $searchTerm ?>">
+                <button type="submit" class="btn btn-primary">Buscar</button>
             </div>
         </form>
+
     </div>
-
-
     <!--Tabla de datos -->
-    <table border="1" class="table m-5" id="dataTable">
+    <table border="1" class="table m-5" id="dataTable" style="width: 186vh; ">
         <thead>
             <th>Wharehouse</th>
             <th>SKU</th>
@@ -192,7 +219,8 @@ if (isset($_POST['export_pdf'])) {
             ?>
         </tbody>
     </table>
-    <!-- Agregar controles de paginación -->
+
+    <!-- Controles de paginación -->
     <div class="d-flex justify-content-center mt-3">
         <ul class="pagination">
             <?php
@@ -217,13 +245,6 @@ if (isset($_POST['export_pdf'])) {
         </ul>
     </div>
 
-    <div class="d-flex justify-content-center mt-3">
-        <form method="post">
-            <button type="submit" name="export_excel" class="btn btn-success m-2">Exportar a Excel</button>
-            <button type="submit" name="export_pdf" class="btn btn-danger m-2">Exportar a PDF</button>
-        </form>
-    </div>
-
 </body>
 
 <script>
@@ -233,11 +254,18 @@ if (isset($_POST['export_pdf'])) {
 
         // Establecer el valor inicial del input de búsqueda
         searchInput.value = '<?= $searchTerm ?>';
+        $('#dataTable').DataTable();
     });
 
     function mayus(e) {
         e.value = e.value.toUpperCase();
     }
 </script>
+
+<style>
+    body {
+        width: 100vw;
+    }
+</style>
 
 </html>
