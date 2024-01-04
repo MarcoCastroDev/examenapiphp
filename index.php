@@ -40,24 +40,21 @@ while ($row = $bufferResult->fetch(PDO::FETCH_ASSOC)) {
     // Almacenar datos en el array bufferData
     $bufferData[strtoupper($row['ItemCode'])][strtoupper($row['Whscode'])] = $row['Buffer'];
 }
-// echo '<pre>';
-// print_r($bufferData);
-// echo '</pre>';
 
 // Crear arreglo combinado con datos de API y de BD
 $combinedData = [];
 
 foreach ($data['data'] as $apiItem) {
     $combinedDataItem = $apiItem;
-    $wharehouse = strtoupper($apiItem['locations_external_id']);
+    $warehouse = strtoupper($apiItem['locations_external_id']);
     $sku = strtoupper($apiItem['skus_external_id']);
 
     if (isset($bufferData[$sku])) {
         foreach ($bufferData[$sku] as $bufferWarehouse => $bufferValue) {
             $bufferWarehouse = trim($bufferWarehouse);
             // print_r($bufferWarehouse);
-            if ($wharehouse === $bufferWarehouse) {
-                $combinedDataItem['buffer_sql'] = $bufferValue;
+            if ($warehouse === $bufferWarehouse) {
+                $combinedDataItem['buffer_sql'] = trim($bufferValue);
                 break;
             }
         }
@@ -66,6 +63,7 @@ foreach ($data['data'] as $apiItem) {
     }
     $combinedData[] = $combinedDataItem;
 }
+
 // echo '<pre>';
 // print_r($combinedData);
 // echo '</pre>';
@@ -102,11 +100,12 @@ $filteredData = array_filter($combinedData, function ($item) use ($searchTerm) {
 
 $filteredDataPaginado = array_slice($filteredData, $offset, $registrosPorPagina);
 
+// Exportación a Excel
 if (isset($_POST['export_excel'])) {
-    exportToCSV($filteredData);
+    exportToExcel($filteredData);
 }
 
-// Botón de exportación a PDF
+// Exportación a PDF
 if (isset($_POST['export_pdf'])) {
     exportToPDF($filteredData);
 }
@@ -149,17 +148,17 @@ if (isset($_POST['export_pdf'])) {
             </button>
             <ul class="dropdown-menu">
                 <form method="post">
-                    <button type="submit" name="export_excel" class="btn dropdown-item"><i class="fas fa-file-csv"
+                    <button type="submit" name="export_excel" class="btn dropdown-item"><i class="fas fa-file-excel"
                             style="color: #217346;"></i> Excel</button>
                     <button type="submit" name="export_pdf" class="btn dropdown-item"><i class="fas fa-file-pdf"
-                            style="color: #ff4343;"></i> PDF</button>
+                            style="color: #ff4343;"></i> PDF</button> 
                 </form>
             </ul>
         </div>
         <form action="" method="GET">
             <div class="input-group ms-2" style="width: 118% ">
                 <input type="text" class="form-control w-20" id="searchInput" name="search"
-                    placeholder="SKU / SKU name / Wharehouse" onkeyup="mayus(this);" value="<?= $searchTerm ?>">
+                    placeholder="SKU / SKU name / Warehouse" onkeyup="mayus(this);" value="<?= $searchTerm ?>">
                 <button type="submit" class="btn btn-primary">Buscar</button>
             </div>
         </form>
@@ -168,7 +167,7 @@ if (isset($_POST['export_pdf'])) {
     <!--Tabla de datos -->
     <table border="1" class="table m-5" id="dataTable" style="width: 186vh; ">
         <thead>
-            <th>Wharehouse</th>
+            <th>Warehouse</th>
             <th>SKU</th>
             <th>SKU name</th>
             <th>Pack Constraint</th>
