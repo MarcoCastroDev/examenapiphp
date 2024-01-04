@@ -117,7 +117,8 @@ if (isset($_POST['export_pdf'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Examen Marco Castro</title>
+    <title>Inventario - Marco</title>
+    <link rel="shortcut icon" href="img\Senor-frogs-logo-removebg-preview.png" />
     <!-- Llamado de Bootsrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
@@ -135,10 +136,8 @@ if (isset($_POST['export_pdf'])) {
         <img src="https://senorfrogs.com/es/wp-content/uploads/sites/3/elementor/thumbs/SF_MexicanFood_Logo-pj9g6cyhnmoz63fbv9hov658qdq4jeeccosiqqi2ve.png"
             alt="" class="navbar-brand m-2">
     </nav>
-
     <h1 class="title m-5"><i class="fas fa-clipboard-check p-3" style="color: #00a321;"></i>Listado de Inventario ideal
         por almacén</h1>
-
     <!-- Barra de búsqueda -->
     <div class="input-group offset-md-8 w-100">
         <div class="dropdown">
@@ -151,7 +150,7 @@ if (isset($_POST['export_pdf'])) {
                     <button type="submit" name="export_excel" class="btn dropdown-item"><i class="fas fa-file-excel"
                             style="color: #217346;"></i> Excel</button>
                     <button type="submit" name="export_pdf" class="btn dropdown-item"><i class="fas fa-file-pdf"
-                            style="color: #ff4343;"></i> PDF</button> 
+                            style="color: #ff4343;"></i> PDF</button>
                 </form>
             </ul>
         </div>
@@ -179,10 +178,8 @@ if (isset($_POST['export_pdf'])) {
             foreach ($filteredDataPaginado as $item) {
                 // Verificar si la clave "buffer_sql" existe en el array actual
                 $bufferValue = isset($item['buffer_sql']) ? $item['buffer_sql'] : 0;
-
                 // Calcular la diferencia
                 $diferencia = $item['pack_constraint'] - $bufferValue;
-
                 // Determinar la clase de estilo basada en el valor de diferencia
                 $class = '';
                 if ($diferencia > 0) {
@@ -224,21 +221,23 @@ if (isset($_POST['export_pdf'])) {
         <ul class="pagination">
             <?php
             if ($paginaActual > 1) {
-                echo '<li class="page-item"><a class="page-link" href="?pagina=' . ($paginaActual - 1) . '">Página anterior</a></li>';
+                echo '<li class="page-item"><a class="page-link" href="?pagina=' . ($paginaActual - 1) . '">Prev</a></li>';
             }
-
             for ($i = max(1, $paginaActual - 2); $i <= min($totalPaginas, $paginaActual + 2); $i++) {
                 echo '<li class="page-item ' . ($i == $paginaActual ? 'active' : '') . '"><a class="page-link" href="?pagina=' . $i . '">' . $i . '</a></li>';
             }
-
-            for ($i = max(1, $totalPaginas - 2); $i <= $totalPaginas; $i++) {
-                if ($i > $paginaActual) {
-                    echo '<li class="page-item"><a class="page-link" href="?pagina=' . $i . '">' . $i . '</a></li>';
+            if ($paginaActual < $totalPaginas - 1) {
+                if ($paginaActual <= $totalPaginas - 3) {
+                    echo '<li class="page-item"><span class="page-link">...</span></li>';
+                }
+                for ($i = max(1, $totalPaginas - 1); $i <= $totalPaginas; $i++) {
+                    if ($i != $paginaActual && $i != $totalPaginas - 1) {
+                        echo '<li class="page-item"><a class="page-link" href="?pagina=' . $i . '">' . $i . '</a></li>';
+                    }
                 }
             }
-
             if ($paginaActual < $totalPaginas) {
-                echo '<li class="page-item"><a class="page-link" href="?pagina=' . ($paginaActual + 1) . '">Página siguiente</a></li>';
+                echo '<li class="page-item"><a class="page-link" href="?pagina=' . ($paginaActual + 1) . '">Next</a></li>';
             }
             ?>
         </ul>
@@ -250,12 +249,10 @@ if (isset($_POST['export_pdf'])) {
     document.addEventListener('DOMContentLoaded', function () {
         const searchInput = document.getElementById('searchInput');
         const tableRows = document.querySelectorAll('.table tbody tr');
-
         // Establecer el valor inicial del input de búsqueda
         searchInput.value = '<?= $searchTerm ?>';
         $('#dataTable').DataTable();
     });
-
     function mayus(e) {
         e.value = e.value.toUpperCase();
     }
@@ -264,6 +261,11 @@ if (isset($_POST['export_pdf'])) {
 <style>
     body {
         width: 100vw;
+        overflow-x: hidden;
+    }
+
+    #dataTable {
+        max-width: 100%;
     }
 </style>
 

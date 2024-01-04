@@ -73,7 +73,7 @@ function exportToExcel($data) {
 
     // Configurar la respuesta para descargar
     header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    header('Content-Disposition: attachment;filename="Export_Listado.xlsx"');
+    header('Content-Disposition: attachment;filename="Export_Excel.xlsx"');
     header('Cache-Control: max-age=0');
 
     // Crear el escritor para Excel (Xlsx)

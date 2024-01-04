@@ -54,7 +54,7 @@ foreach ($data['data'] as $apiItem) {
             $bufferWarehouse = trim($bufferWarehouse);
             // print_r($bufferWarehouse);
             if ($warehouse === $bufferWarehouse) {
-                $combinedDataItem['buffer_sql'] = $bufferValue;
+                $combinedDataItem['buffer_sql'] = trim($bufferValue);
                 break;
             }
         }
@@ -63,6 +63,10 @@ foreach ($data['data'] as $apiItem) {
     }
     $combinedData[] = $combinedDataItem;
 }
+
+// echo '<pre>';
+// print_r($combinedData);
+// echo '</pre>';
 
 // Función de comparación para usort
 function compareWarehouses($a, $b)
@@ -96,11 +100,12 @@ $filteredData = array_filter($combinedData, function ($item) use ($searchTerm) {
 
 $filteredDataPaginado = array_slice($filteredData, $offset, $registrosPorPagina);
 
+// Exportación a Excel
 if (isset($_POST['export_excel'])) {
     exportToExcel($filteredData);
 }
 
-// Botón de exportación a PDF
+// Exportación a PDF
 if (isset($_POST['export_pdf'])) {
     exportToPDF($filteredData);
 }
@@ -112,7 +117,8 @@ if (isset($_POST['export_pdf'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Examen Marco Castro</title>
+    <title>Inventario - Marco</title>
+    <link rel="shortcut icon" href="img\Senor-frogs-logo-removebg-preview.png" />
     <!-- Llamado de Bootsrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
@@ -146,7 +152,7 @@ if (isset($_POST['export_pdf'])) {
                     <button type="submit" name="export_excel" class="btn dropdown-item"><i class="fas fa-file-excel"
                             style="color: #217346;"></i> Excel</button>
                     <button type="submit" name="export_pdf" class="btn dropdown-item"><i class="fas fa-file-pdf"
-                            style="color: #ff4343;"></i> PDF</button> 
+                            style="color: #ff4343;"></i> PDF</button>
                 </form>
             </ul>
         </div>
@@ -222,13 +228,10 @@ if (isset($_POST['export_pdf'])) {
                 echo '<li class="page-item"><a class="page-link" href="?pagina=' . ($paginaActual - 1) . '">Página anterior</a></li>';
             }
 
-            for ($i = max(1, $paginaActual - 2); $i <= min($totalPaginas, $paginaActual + 2); $i++) {
-                echo '<li class="page-item ' . ($i == $paginaActual ? 'active' : '') . '"><a class="page-link" href="?pagina=' . $i . '">' . $i . '</a></li>';
-            }
-
-            for ($i = max(1, $totalPaginas - 2); $i <= $totalPaginas; $i++) {
-                if ($i > $paginaActual) {
-                    echo '<li class="page-item"><a class="page-link" href="?pagina=' . $i . '">' . $i . '</a></li>';
+            // Mostrar solo los enlaces de paginación que son necesarios
+            for ($i = max(1, $totalPaginas - 4); $i <= $totalPaginas; $i++) {
+                if ($i >= $paginaActual - 2 && $i <= $paginaActual + 2) {
+                    echo '<li class="page-item ' . ($i == $paginaActual ? 'active' : '') . '"><a class="page-link" href="?pagina=' . $i . '">' . $i . '</a></li>';
                 }
             }
 
@@ -259,6 +262,11 @@ if (isset($_POST['export_pdf'])) {
 <style>
     body {
         width: 100vw;
+        overflow-x: hidden;
+    }
+
+    #dataTable {
+        max-width: 100%;
     }
 </style>
 
