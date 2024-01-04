@@ -2,8 +2,7 @@
 // Función para generar y exportar datos a un archivo CSV
 function exportToCSV($data) {
     $timestamp = time();
-    print_r($timestamp);
-    $filename = 'Export_' . $timestamp . '.csv';
+    $filename = 'Export_Listado_' . $timestamp . '.csv';
 
     header('Content-Type: text/csv; charset=utf-8');
     header('Content-Disposition: attachment; filename="' . $filename . '"');

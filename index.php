@@ -2,6 +2,7 @@
 require('dbconnection.php');
 require('getapi.php');
 require('exportExcel.php');
+require('exportPdf.php');
 
 // Datos de conexión a API
 $token = "Kze7r3s6oHvHBgIfpOlZD5RFTHZqHPEhrx0h7ngiJnoHq9yBUYjP7zYXtigTRKFCEIZ3YwSXoNkHsL5qVFLxfNiemzhoHsX3J7fZPVtqVWAUef6Ag96eWAXszJKeyxzweCJ7frvnDLrrxTrh1fBYYhFCBgl0F1AQEfZhqRcwXhp5fTSOdnhJbU9YPNG7h6R6exkGiCOaDt5IwQsGxn4m7X2q3IFaBGDv9cO85dbxdPmjorTQTbXyayUii9cYF4Zp";
@@ -89,6 +90,11 @@ $filteredDataPaginado = array_slice($filteredData, $offset, $registrosPorPagina)
 
 if (isset($_POST['export_excel'])) {
     exportToCSV($filteredData);
+}
+
+// Botón de exportación a PDF
+if (isset($_POST['export_pdf'])) {
+    exportToPDF($filteredData);
 }
 ?>
 
@@ -214,8 +220,8 @@ if (isset($_POST['export_excel'])) {
     <div class="d-flex justify-content-center mt-3">
         <form method="post">
             <button type="submit" name="export_excel" class="btn btn-success m-2">Exportar a Excel</button>
+            <button type="submit" name="export_pdf" class="btn btn-danger m-2">Exportar a PDF</button>
         </form>
-        <button type="button" class="btn btn-danger m-2">Exportar a PDF</button>
     </div>
 
 </body>
