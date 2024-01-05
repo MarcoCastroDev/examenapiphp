@@ -36,6 +36,10 @@ while ($row = $bufferResult->fetch(PDO::FETCH_ASSOC)) {
     $bufferData[strtoupper($row['ItemCode'])][strtoupper($row['Whscode'])] = $row['Buffer'];
 }
 
+// echo '<pre>';
+// print_r($bufferData);
+// echo '<pre>';
+
 // Crear arreglo combinado con datos de API y de BD
 $combinedData = [];
 
@@ -242,15 +246,16 @@ if (isset($_POST['export_pdf'])) {
             }
 
             // Páginas intermedias
-            for ($i = max(1, $paginaActual - 2); $i <= min($totalPaginas, $paginaActual + 2); $i++) {
+            $maxPages = min($totalPaginas, 5);  // Máximo 5 páginas intermedias
+            $startPage = max(1, min($paginaActual - floor($maxPages / 2), $totalPaginas - $maxPages + 1));
+
+            for ($i = $startPage; $i < $startPage + $maxPages; $i++) {
                 echo '<li class="page-item ' . ($i == $paginaActual ? 'active' : '') . '"><a class="page-link" href="?pagina=' . $i . $urlParams . '">' . $i . '</a></li>';
             }
 
-            // Puntos suspensivos y última página
+            // Última página
             if ($paginaActual < $totalPaginas - 2) {
                 echo '<li class="page-item"><span class="page-link">...</span></li>';
-                echo '<li class="page-item"><a class="page-link" href="?pagina=' . $totalPaginas . $urlParams . '">' . $totalPaginas . '</a></li>';
-            } elseif ($paginaActual == $totalPaginas - 2 && $totalPaginas > 4) {
                 echo '<li class="page-item"><a class="page-link" href="?pagina=' . $totalPaginas . $urlParams . '">' . $totalPaginas . '</a></li>';
             }
 
