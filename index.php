@@ -36,10 +36,6 @@ while ($row = $bufferResult->fetch(PDO::FETCH_ASSOC)) {
     $bufferData[strtoupper($row['ItemCode'])][strtoupper($row['Whscode'])] = $row['Buffer'];
 }
 
-// echo '<pre>';
-// print_r($bufferData);
-// echo '<pre>';
-
 // Crear arreglo combinado con datos de API y de BD
 $combinedData = [];
 
@@ -51,7 +47,6 @@ foreach ($data['data'] as $apiItem) {
     if (isset($bufferData[$sku])) {
         foreach ($bufferData[$sku] as $bufferWarehouse => $bufferValue) {
             $bufferWarehouse = trim($bufferWarehouse);
-            // print_r($bufferWarehouse);
             if ($warehouse === $bufferWarehouse) {
                 $combinedDataItem['buffer_sql'] = trim($bufferValue);
                 break;
@@ -62,11 +57,13 @@ foreach ($data['data'] as $apiItem) {
     }
     $combinedData[] = $combinedDataItem;
 }
+
 // Función de comparación para usort
 function compareWarehouses($a, $b)
 {
     return strcmp($a['locations_external_id'], $b['locations_external_id']);
 }
+
 // Ordenar el array por el campo "Warehouse"
 usort($combinedData, 'compareWarehouses');
 
@@ -75,47 +72,27 @@ $registrosPorPagina = 10;
 $paginaActual = isset($_GET['pagina']) ? $_GET['pagina'] : 1;
 $offset = ($paginaActual - 1) * $registrosPorPagina;
 
-// Configuración de paginación
-$totalRegistros = count($combinedData);
+// Filtrar los resultados basados en la búsqueda
+$searchTerm = isset($_GET['search']) ? $_GET['search'] : '';
+$filteredData = array_filter($combinedData, function ($item) use ($searchTerm) {
+    $sku = strtoupper($item['skus_external_id']);
+    $skuName = strtoupper($item['sku_name']);
+    $warehouse = strtoupper($item['locations_external_id']);
+    return strpos($sku, $searchTerm) !== false || strpos($skuName, $searchTerm) !== false || strpos($warehouse, $searchTerm) !== false;
+});
+
+// Recalcular el total de registros y páginas para la nueva búsqueda
+$totalRegistros = count($filteredData);
 $totalPaginas = ceil($totalRegistros / $registrosPorPagina);
 
-// Paginar el array $combinedData
-$combinedDataPaginado = array_slice($combinedData, $offset, $registrosPorPagina);
+// Paginar el array $filteredData
+$filteredDataPaginado = array_slice($filteredData, $offset, $registrosPorPagina);
 
 $conn = null;
-
-// Barra de búsqueda
-$searchTerm = isset($_GET['search']) ? $_GET['search'] : '';
-
-// Verificar si se ha enviado una nueva búsqueda
-if (!empty($searchTerm)) {
-    // Filtrar los resultados basados en la búsqueda
-    $filteredData = array_filter($combinedData, function ($item) use ($searchTerm) {
-        $sku = strtoupper($item['skus_external_id']);
-        $skuName = strtoupper($item['sku_name']);
-        $warehouse = strtoupper($item['locations_external_id']);
-
-        return strpos($sku, $searchTerm) !== false ||
-            strpos($skuName, $searchTerm) !== false ||
-            strpos($warehouse, $searchTerm) !== false;
-    });
-
-    // Recalcular el total de registros y páginas para la nueva búsqueda
-    $totalRegistros = count($filteredData);
-    $totalPaginas = ceil($totalRegistros / $registrosPorPagina);
-
-    // Paginar el array filtrado
-    $filteredDataPaginado = array_slice($filteredData, $offset, $registrosPorPagina);
-} else {
-    // Si no hay término de búsqueda, usar los datos originales
-    $filteredDataPaginado = array_slice($combinedData, $offset, $registrosPorPagina);
-}
-
 // Exportación a Excel
 if (isset($_POST['export_excel'])) {
     exportToExcel($filteredData);
 }
-
 // Exportación a PDF
 if (isset($_POST['export_pdf'])) {
     exportToPDF($filteredData);
@@ -137,8 +114,6 @@ if (isset($_POST['export_pdf'])) {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
         crossorigin="anonymous"></script>
-    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/bs5/dt-1.11.6/datatables.min.css" />
-    <script type="text/javascript" src="https://cdn.datatables.net/v/bs5/dt-1.11.6/datatables.min.js"></script>
 </head>
 
 <body>
@@ -174,13 +149,12 @@ if (isset($_POST['export_pdf'])) {
                 <button type="submit" class="btn btn-primary">Buscar</button>
                 <?php
                 if (!empty($searchTerm)) {
-                    echo '<a href="?pagina=1" class="btn btn-secondary ms-2">Reiniciar</a>';
+                    echo '<a href="/examen_marco/" class="btn btn-secondary ms-2">Reiniciar</a>';
                 }
                 ?>
             </div>
         </form>
     </div>
-
     <!--Tabla de datos -->
     <table border="1" class="table m-5" id="dataTable" style="width: 186vh; ">
         <thead>
@@ -234,31 +208,26 @@ if (isset($_POST['export_pdf'])) {
         </tbody>
     </table>
 
-    <!-- Controles de paginación -->
+    <!-- Paginación -->
     <div class="d-flex justify-content-center mt-3">
         <ul class="pagination">
             <?php
             $urlParams = !empty($searchTerm) ? '&search=' . urlencode($searchTerm) : '';
-
             // Botón "Prev"
             if ($paginaActual > 1) {
                 echo '<li class="page-item"><a class="page-link" href="?pagina=' . ($paginaActual - 1) . $urlParams . '">Prev</a></li>';
             }
-
             // Páginas intermedias
-            $maxPages = min($totalPaginas, 5);  // Máximo 5 páginas intermedias
+            $maxPages = min($totalPaginas, 5);
             $startPage = max(1, min($paginaActual - floor($maxPages / 2), $totalPaginas - $maxPages + 1));
-
             for ($i = $startPage; $i < $startPage + $maxPages; $i++) {
                 echo '<li class="page-item ' . ($i == $paginaActual ? 'active' : '') . '"><a class="page-link" href="?pagina=' . $i . $urlParams . '">' . $i . '</a></li>';
             }
-
             // Última página
             if ($paginaActual < $totalPaginas - 2) {
                 echo '<li class="page-item"><span class="page-link">...</span></li>';
                 echo '<li class="page-item"><a class="page-link" href="?pagina=' . $totalPaginas . $urlParams . '">' . $totalPaginas . '</a></li>';
             }
-
             // Botón "Next"
             if ($paginaActual < $totalPaginas) {
                 echo '<li class="page-item"><a class="page-link" href="?pagina=' . ($paginaActual + 1) . $urlParams . '">Next</a></li>';
@@ -274,7 +243,6 @@ if (isset($_POST['export_pdf'])) {
         const tableRows = document.querySelectorAll('.table tbody tr');
         // Establecer el valor inicial del input de búsqueda
         searchInput.value = '<?= $searchTerm ?>';
-        $('#dataTable').DataTable();
     });
     function mayus(e) {
         e.value = e.value.toUpperCase();
@@ -285,10 +253,6 @@ if (isset($_POST['export_pdf'])) {
     body {
         width: 100vw;
         overflow-x: hidden;
-    }
-
-    #dataTable {
-        max-width: 100%;
     }
 </style>
 
