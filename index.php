@@ -22,11 +22,6 @@ $conn = getDatabaseConnection($server, $user, $password, $database);
 $sql = "SELECT ItemCode,Whscode,Buffer FROM (SELECT LEFT(ItemCode,20) ITEMCODE, LEFT(WhsCode,8) WhsCode, Buffer,Empresa, ROW_NUMBER() OVER (PARTITION BY ItemCode, WhsCode,Empresa ORDER BY ItemCode, WhsCode, Fecha DESC, Hora DESC) Num FROM SITI..BYS_Buffer WITH (NOLOCK) WHERE Fecha <= GETDATE() and Empresa = 'BDGRUPOS_BUENA' AND whscode in (select location from onebeat_stock_locations) ) AS Z WHERE Z.NUM=1;";
 $bufferResult = $conn->query($sql);
 
-// Configuración de paginación
-$registrosPorPagina = 10;
-$paginaActual = isset($_GET['pagina']) ? $_GET['pagina'] : 1;
-$offset = ($paginaActual - 1) * $registrosPorPagina;
-
 if (!$bufferResult) {
     echo "Error en la consulta SQL: " . print_r($conn->errorInfo(), true);
     exit;
@@ -63,11 +58,6 @@ foreach ($data['data'] as $apiItem) {
     }
     $combinedData[] = $combinedDataItem;
 }
-
-// echo '<pre>';
-// print_r($combinedData);
-// echo '</pre>';
-
 // Función de comparación para usort
 function compareWarehouses($a, $b)
 {
@@ -76,29 +66,46 @@ function compareWarehouses($a, $b)
 // Ordenar el array por el campo "Warehouse"
 usort($combinedData, 'compareWarehouses');
 
-// Paginar el array $combinedData
-$combinedDataPaginado = array_slice($combinedData, $offset, $registrosPorPagina);
+// Configuración de paginación
+$registrosPorPagina = 10;
+$paginaActual = isset($_GET['pagina']) ? $_GET['pagina'] : 1;
+$offset = ($paginaActual - 1) * $registrosPorPagina;
 
 // Configuración de paginación
 $totalRegistros = count($combinedData);
 $totalPaginas = ceil($totalRegistros / $registrosPorPagina);
+
+// Paginar el array $combinedData
+$combinedDataPaginado = array_slice($combinedData, $offset, $registrosPorPagina);
 
 $conn = null;
 
 // Barra de búsqueda
 $searchTerm = isset($_GET['search']) ? $_GET['search'] : '';
 
-$filteredData = array_filter($combinedData, function ($item) use ($searchTerm) {
-    $sku = strtoupper($item['skus_external_id']);
-    $skuName = strtoupper($item['sku_name']);
-    $warehouse = strtoupper($item['locations_external_id']);
+// Verificar si se ha enviado una nueva búsqueda
+if (!empty($searchTerm)) {
+    // Filtrar los resultados basados en la búsqueda
+    $filteredData = array_filter($combinedData, function ($item) use ($searchTerm) {
+        $sku = strtoupper($item['skus_external_id']);
+        $skuName = strtoupper($item['sku_name']);
+        $warehouse = strtoupper($item['locations_external_id']);
 
-    return strpos($sku, $searchTerm) !== false ||
-        strpos($skuName, $searchTerm) !== false ||
-        strpos($warehouse, $searchTerm) !== false;
-});
+        return strpos($sku, $searchTerm) !== false ||
+            strpos($skuName, $searchTerm) !== false ||
+            strpos($warehouse, $searchTerm) !== false;
+    });
 
-$filteredDataPaginado = array_slice($filteredData, $offset, $registrosPorPagina);
+    // Recalcular el total de registros y páginas para la nueva búsqueda
+    $totalRegistros = count($filteredData);
+    $totalPaginas = ceil($totalRegistros / $registrosPorPagina);
+
+    // Paginar el array filtrado
+    $filteredDataPaginado = array_slice($filteredData, $offset, $registrosPorPagina);
+} else {
+    // Si no hay término de búsqueda, usar los datos originales
+    $filteredDataPaginado = array_slice($combinedData, $offset, $registrosPorPagina);
+}
 
 // Exportación a Excel
 if (isset($_POST['export_excel'])) {
@@ -139,7 +146,7 @@ if (isset($_POST['export_pdf'])) {
     <h1 class="title m-5"><i class="fas fa-clipboard-check p-3" style="color: #00a321;"></i>Listado de Inventario ideal
         por almacén</h1>
     <!-- Barra de búsqueda -->
-    <div class="input-group offset-md-8 w-100">
+    <div class="input-group offset-md-7 w-100">
         <div class="dropdown">
             <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown"
                 aria-expanded="false">
@@ -147,22 +154,29 @@ if (isset($_POST['export_pdf'])) {
             </button>
             <ul class="dropdown-menu">
                 <form method="post">
-                    <button type="submit" name="export_excel" class="btn dropdown-item"><i class="fas fa-file-excel"
-                            style="color: #217346;"></i> Excel</button>
-                    <button type="submit" name="export_pdf" class="btn dropdown-item"><i class="fas fa-file-pdf"
-                            style="color: #ff4343;"></i> PDF</button>
+                    <button type="submit" name="export_excel" class="btn dropdown-item">
+                        <i class="fas fa-file-excel" style="color: #217346;"></i> Excel
+                    </button>
+                    <button type="submit" name="export_pdf" class="btn dropdown-item">
+                        <i class="fas fa-file-pdf" style="color: #ff4343;"></i> PDF
+                    </button>
                 </form>
             </ul>
         </div>
-        <form action="" method="GET">
-            <div class="input-group ms-2" style="width: 118% ">
-                <input type="text" class="form-control w-20" id="searchInput" name="search"
+        <form action="" method="GET" class="ms-2" style="width: 32%;">
+            <div class="input-group">
+                <input type="text" class="form-control" id="searchInput" name="search"
                     placeholder="SKU / SKU name / Warehouse" onkeyup="mayus(this);" value="<?= $searchTerm ?>">
                 <button type="submit" class="btn btn-primary">Buscar</button>
+                <?php
+                if (!empty($searchTerm)) {
+                    echo '<a href="?pagina=1" class="btn btn-secondary ms-2">Reiniciar</a>';
+                }
+                ?>
             </div>
         </form>
-
     </div>
+
     <!--Tabla de datos -->
     <table border="1" class="table m-5" id="dataTable" style="width: 186vh; ">
         <thead>
@@ -220,29 +234,33 @@ if (isset($_POST['export_pdf'])) {
     <div class="d-flex justify-content-center mt-3">
         <ul class="pagination">
             <?php
+            $urlParams = !empty($searchTerm) ? '&search=' . urlencode($searchTerm) : '';
+
+            // Botón "Prev"
             if ($paginaActual > 1) {
-                echo '<li class="page-item"><a class="page-link" href="?pagina=' . ($paginaActual - 1) . '">Prev</a></li>';
+                echo '<li class="page-item"><a class="page-link" href="?pagina=' . ($paginaActual - 1) . $urlParams . '">Prev</a></li>';
             }
+
+            // Páginas intermedias
             for ($i = max(1, $paginaActual - 2); $i <= min($totalPaginas, $paginaActual + 2); $i++) {
-                echo '<li class="page-item ' . ($i == $paginaActual ? 'active' : '') . '"><a class="page-link" href="?pagina=' . $i . '">' . $i . '</a></li>';
+                echo '<li class="page-item ' . ($i == $paginaActual ? 'active' : '') . '"><a class="page-link" href="?pagina=' . $i . $urlParams . '">' . $i . '</a></li>';
             }
-            if ($paginaActual < $totalPaginas - 1) {
-                if ($paginaActual <= $totalPaginas - 3) {
-                    echo '<li class="page-item"><span class="page-link">...</span></li>';
-                }
-                for ($i = max(1, $totalPaginas - 1); $i <= $totalPaginas; $i++) {
-                    if ($i != $paginaActual && $i != $totalPaginas - 1) {
-                        echo '<li class="page-item"><a class="page-link" href="?pagina=' . $i . '">' . $i . '</a></li>';
-                    }
-                }
+
+            // Puntos suspensivos y última página
+            if ($paginaActual < $totalPaginas - 2) {
+                echo '<li class="page-item"><span class="page-link">...</span></li>';
+                echo '<li class="page-item"><a class="page-link" href="?pagina=' . $totalPaginas . $urlParams . '">' . $totalPaginas . '</a></li>';
+            } elseif ($paginaActual == $totalPaginas - 2 && $totalPaginas > 4) {
+                echo '<li class="page-item"><a class="page-link" href="?pagina=' . $totalPaginas . $urlParams . '">' . $totalPaginas . '</a></li>';
             }
+
+            // Botón "Next"
             if ($paginaActual < $totalPaginas) {
-                echo '<li class="page-item"><a class="page-link" href="?pagina=' . ($paginaActual + 1) . '">Next</a></li>';
+                echo '<li class="page-item"><a class="page-link" href="?pagina=' . ($paginaActual + 1) . $urlParams . '">Next</a></li>';
             }
             ?>
         </ul>
     </div>
-
 </body>
 
 <script>
