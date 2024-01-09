@@ -5,13 +5,16 @@ use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 // Función para generar y exportar datos a un archivo CSV
-function exportToExcel($data) {
+function exportToExcel($data)
+{
     // Crear una instancia de PhpSpreadsheet
     $spreadsheet = new Spreadsheet();
 
     // Configurar estilo para el encabezado
     $headerStyle = [
         'font' => [
+            'name' => 'Century Gothic',
+            'size' => 12,
             'bold' => true,
             'color' => ['rgb' => 'FFFFFF'],
         ],
@@ -28,16 +31,29 @@ function exportToExcel($data) {
     // Obtener la hoja activa
     $sheet = $spreadsheet->getActiveSheet();
 
+    // Agregar logo y título en la fila 3
+    $logoPath = 'https://senorfrogs.com/es/wp-content/uploads/sites/3/elementor/thumbs/SF_MexicanFood_Logo-pj9g6cyhnmoz63fbv9hov658qdq4jeeccosiqqi2ve.png';
+    $drawing = new \PhpOffice\PhpSpreadsheet\Worksheet\MemoryDrawing();
+    $drawing->setImageResource(imagecreatefrompng($logoPath));
+    $drawing->setWidth(120);
+    $drawing->setHeight(50);
+    $drawing->setCoordinates('A1');
+    $drawing->setWorksheet($sheet);
+
+    $sheet->mergeCells('A2:F2');
+    $sheet->getRowDimension(2)->setRowHeight(30);
+    $sheet->setCellValue('A2', 'Listado de Inventario ideal por almacén')->getStyle('A2')->applyFromArray($headerStyle);
+
     // Configurar el encabezado
-    $sheet->setCellValue('A1', 'Warehouse')->getStyle('A1')->applyFromArray($headerStyle);
-    $sheet->setCellValue('B1', 'SKU')->getStyle('B1')->applyFromArray($headerStyle);
-    $sheet->setCellValue('C1', 'SKU name')->getStyle('C1')->applyFromArray($headerStyle);
-    $sheet->setCellValue('D1', 'Pack Constraint')->getStyle('D1')->applyFromArray($headerStyle);
-    $sheet->setCellValue('E1', 'Buffer')->getStyle('E1')->applyFromArray($headerStyle);
-    $sheet->setCellValue('F1', 'Diferencia')->getStyle('F1')->applyFromArray($headerStyle);
+    $sheet->setCellValue('A4', 'Warehouse')->getStyle('A4')->applyFromArray($headerStyle);
+    $sheet->setCellValue('B4', 'SKU')->getStyle('B4')->applyFromArray($headerStyle);
+    $sheet->setCellValue('C4', 'SKU name')->getStyle('C4')->applyFromArray($headerStyle);
+    $sheet->setCellValue('D4', 'Pack Constraint')->getStyle('D4')->applyFromArray($headerStyle);
+    $sheet->setCellValue('E4', 'Buffer')->getStyle('E4')->applyFromArray($headerStyle);
+    $sheet->setCellValue('F4', 'Diferencia')->getStyle('F4')->applyFromArray($headerStyle);
 
     // Configurar datos
-    $row = 2;
+    $row = 5;
     foreach ($data as $item) {
         $bufferValue = isset($item['buffer_sql']) ? $item['buffer_sql'] : 0;
         $diferencia = $item['pack_constraint'] - $bufferValue;
@@ -51,13 +67,17 @@ function exportToExcel($data) {
 
         // Establecer el color de la diferencia
         $color = ($diferencia > 0) ? '00FF00' : (($diferencia < 0) ? 'FF0000' : '000000');
-        $sheet->getStyle('F' . $row)->getFont()->getColor()->setARGB($color);
-
+        $sheet->getStyle('F' . $row)->getFont()->getColor()->setRGB($color);
         $row++;
     }
 
     // Configurar estilos adicionales
     $styleArray = [
+        'font' => [
+            'name' => 'Century Gothic',
+            'size' => 12,
+            // 'color' => ['rgb' => '000000'],
+        ],
         'alignment' => [
             'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,
             'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER,
@@ -79,6 +99,7 @@ function exportToExcel($data) {
     // Crear el escritor para Excel (Xlsx)
     $writer = new Xlsx($spreadsheet);
     $writer->save('php://output');
+    exit();
 }
 
 ?>

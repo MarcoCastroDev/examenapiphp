@@ -89,12 +89,10 @@ $totalPaginas = ceil($totalRegistros / $registrosPorPagina);
 $filteredDataPaginado = array_slice($filteredData, $offset, $registrosPorPagina);
 
 $conn = null;
-
 // Exportación a Excel
 if (isset($_POST['export_excel'])) {
     exportToExcel($filteredData);
 }
-
 // Exportación a PDF
 if (isset($_POST['export_pdf'])) {
     exportToPDF($filteredData);
@@ -157,7 +155,6 @@ if (isset($_POST['export_pdf'])) {
             </div>
         </form>
     </div>
-
     <!--Tabla de datos -->
     <table border="1" class="table m-5" id="dataTable" style="width: 186vh; ">
         <thead>
@@ -211,31 +208,26 @@ if (isset($_POST['export_pdf'])) {
         </tbody>
     </table>
 
-    <!-- Controles de paginación -->
+    <!-- Paginación -->
     <div class="d-flex justify-content-center mt-3">
         <ul class="pagination">
             <?php
             $urlParams = !empty($searchTerm) ? '&search=' . urlencode($searchTerm) : '';
-
             // Botón "Prev"
             if ($paginaActual > 1) {
                 echo '<li class="page-item"><a class="page-link" href="?pagina=' . ($paginaActual - 1) . $urlParams . '">Prev</a></li>';
             }
-
             // Páginas intermedias
-            $maxPages = min($totalPaginas, 5);  // Máximo 5 páginas intermedias
+            $maxPages = min($totalPaginas, 5);
             $startPage = max(1, min($paginaActual - floor($maxPages / 2), $totalPaginas - $maxPages + 1));
-
             for ($i = $startPage; $i < $startPage + $maxPages; $i++) {
                 echo '<li class="page-item ' . ($i == $paginaActual ? 'active' : '') . '"><a class="page-link" href="?pagina=' . $i . $urlParams . '">' . $i . '</a></li>';
             }
-
             // Última página
             if ($paginaActual < $totalPaginas - 2) {
                 echo '<li class="page-item"><span class="page-link">...</span></li>';
                 echo '<li class="page-item"><a class="page-link" href="?pagina=' . $totalPaginas . $urlParams . '">' . $totalPaginas . '</a></li>';
             }
-
             // Botón "Next"
             if ($paginaActual < $totalPaginas) {
                 echo '<li class="page-item"><a class="page-link" href="?pagina=' . ($paginaActual + 1) . $urlParams . '">Next</a></li>';
@@ -251,7 +243,6 @@ if (isset($_POST['export_pdf'])) {
         const tableRows = document.querySelectorAll('.table tbody tr');
         // Establecer el valor inicial del input de búsqueda
         searchInput.value = '<?= $searchTerm ?>';
-        // $('#dataTable').DataTable();
     });
     function mayus(e) {
         e.value = e.value.toUpperCase();
@@ -262,10 +253,6 @@ if (isset($_POST['export_pdf'])) {
     body {
         width: 100vw;
         overflow-x: hidden;
-    }
-
-    #dataTable {
-        max-width: 100%;
     }
 </style>
 

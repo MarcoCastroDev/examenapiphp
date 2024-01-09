@@ -209,7 +209,7 @@ if (isset($_POST['export_pdf'])) {
     </table>
 
     <!-- Paginación -->
-    <div class="d-flex justify-content-center mt-3">
+    <div class="d-flex justify-content-center mt-3 position-absolute bottom-25 start-50 translate-middle-x">
         <ul class="pagination">
             <?php
             $urlParams = !empty($searchTerm) ? '&search=' . urlencode($searchTerm) : '';
@@ -244,6 +244,7 @@ if (isset($_POST['export_pdf'])) {
         // Establecer el valor inicial del input de búsqueda
         searchInput.value = '<?= $searchTerm ?>';
     });
+    
     function mayus(e) {
         e.value = e.value.toUpperCase();
     }
