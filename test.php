@@ -68,7 +68,7 @@ function compareWarehouses($a, $b)
 usort($combinedData, 'compareWarehouses');
 
 // Configuración de paginación
-$registrosPorPagina = 10;
+$registrosPorPagina = 50;
 $paginaActual = isset($_GET['pagina']) ? $_GET['pagina'] : 1;
 $offset = ($paginaActual - 1) * $registrosPorPagina;
 
@@ -142,18 +142,13 @@ if (isset($_POST['export_pdf'])) {
                 </form>
             </ul>
         </div>
-        <form action="" method="GET" class="ms-2" style="width: 32%;">
+        <div class="ms-2" style="width: 32%;">
             <div class="input-group">
                 <input type="text" class="form-control" id="searchInput" name="search"
                     placeholder="SKU / SKU name / Warehouse" onkeyup="mayus(this);" value="<?= $searchTerm ?>">
-                <button type="submit" class="btn btn-primary">Buscar</button>
-                <?php
-                if (!empty($searchTerm)) {
-                    echo '<a href="/examen_marco/" class="btn btn-secondary ms-2">Reiniciar</a>';
-                }
-                ?>
+                <button class="btn btn-primary">Buscar</button>
             </div>
-        </form>
+        </div>
     </div>
     <!--Tabla de datos -->
     <table border="1" class="table m-5" id="dataTable" style="width: 186vh; ">
@@ -166,6 +161,9 @@ if (isset($_POST['export_pdf'])) {
             <th>Diferencia</th>
         </thead>
         <tbody>
+            <tr id="noResultsRow" class="table-danger" style="display: none;">
+                <td colspan="6" class="text-center">No se encontraron resultados.</td>
+            </tr>
             <?php
             foreach ($filteredDataPaginado as $item) {
                 // Verificar si la clave "buffer_sql" existe en el array actual
@@ -202,6 +200,7 @@ if (isset($_POST['export_pdf'])) {
                         <?= $diferencia ?>
                     </td>
                 </tr>
+
                 <?php
             }
             ?>
@@ -209,7 +208,7 @@ if (isset($_POST['export_pdf'])) {
     </table>
 
     <!-- Paginación -->
-    <div class="d-flex justify-content-center mt-3">
+    <div class="d-flex justify-content-center mt-3 position-absolute bottom-25 start-50 translate-middle-x">
         <ul class="pagination">
             <?php
             $urlParams = !empty($searchTerm) ? '&search=' . urlencode($searchTerm) : '';
@@ -239,11 +238,33 @@ if (isset($_POST['export_pdf'])) {
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const searchInput = document.getElementById('searchInput');
-        const tableRows = document.querySelectorAll('.table tbody tr');
-        // Establecer el valor inicial del input de búsqueda
-        searchInput.value = '<?= $searchTerm ?>';
-    });
+            const noResultsRow = document.getElementById('noResultsRow');
+            const searchInput = document.getElementById('searchInput');
+            const dataTable = document.getElementById('dataTable');
+
+            searchInput.addEventListener('input', function () {
+                const searchTerm = searchInput.value.toUpperCase();
+                const tableRows = dataTable.querySelectorAll('tbody tr:not(#noResultsRow)');
+
+                let hasResults = false;
+
+                tableRows.forEach(row => {
+                    const sku = row.cells[1].textContent.toUpperCase();
+                    const skuName = row.cells[2].textContent.toUpperCase();
+                    const warehouse = row.cells[0].textContent.toUpperCase();
+
+                    if (sku.includes(searchTerm) || skuName.includes(searchTerm) || warehouse.includes(searchTerm)) {
+                        row.style.display = '';
+                        hasResults = true;
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+
+                // Mostrar u ocultar la fila especial según si hay resultados
+                noResultsRow.style.display = hasResults ? 'none' : '';
+            });
+        });
     function mayus(e) {
         e.value = e.value.toUpperCase();
     }
