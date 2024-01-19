@@ -68,7 +68,7 @@ function compareWarehouses($a, $b)
 usort($combinedData, 'compareWarehouses');
 
 // Configuración de paginación
-$registrosPorPagina = 50;
+$registrosPorPagina = 70;
 $paginaActual = isset($_GET['pagina']) ? $_GET['pagina'] : 1;
 $offset = ($paginaActual - 1) * $registrosPorPagina;
 
@@ -89,16 +89,6 @@ $totalPaginas = ceil($totalRegistros / $registrosPorPagina);
 $filteredDataPaginado = array_slice($filteredData, $offset, $registrosPorPagina);
 
 $conn = null;
-// // Exportación a Excel
-// if (isset($_POST['export_excel'])) {
-//     exportToExcel($filteredDataPaginado);
-//     exit;
-// }
-// Exportación a PDF
-if (isset($_POST['export_pdf'])) {
-    exportToPDF($filteredDataPaginado);
-    exit;
-}
 ?>
 
 <!DOCTYPE html>
@@ -118,8 +108,14 @@ if (isset($_POST['export_pdf'])) {
         crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.4/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.9/pdfmake.min.js"
+        integrity="sha512-5wC3oH3tojdOtHBV6B4TXjlGc0E2uk3YViSrWnv1VUmmVlQDAs1lcupsqqpwjh8jIuodzADYK5xCL5Dkg/ving=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.68/vfs_fonts.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <script src="./js/exportExcel.js"></script>
+    <script src="./js/exportPdf.js"></script>
 
 </head>
 
@@ -129,8 +125,8 @@ if (isset($_POST['export_pdf'])) {
         <img src="https://senorfrogs.com/es/wp-content/uploads/sites/3/elementor/thumbs/SF_MexicanFood_Logo-pj9g6cyhnmoz63fbv9hov658qdq4jeeccosiqqi2ve.png"
             alt="" class="navbar-brand m-2">
     </nav>
-    <h1 class="title m-5"><i class="fas fa-clipboard-check p-3" style="color: #00a321;"></i>Listado de Inventario ideal
-        por almacén</h1>
+    <h1 class="title m-5"><i class="fas fa-clipboard-check p-3" style="color: #00a321;"></i>Reporte de OneBeat vs Buffer
+    </h1>
     <!-- Barra de búsqueda -->
     <div class="input-group offset-md-7 w-100">
         <div class="dropdown">
@@ -143,7 +139,7 @@ if (isset($_POST['export_pdf'])) {
                     <button type="button" name="export_excel" class="btn dropdown-item" onclick="exportExcel()">
                         <i class="fas fa-file-excel" style="color: #217346;"></i> Excel
                     </button>
-                    <button type="submit" name="export_pdf" class="btn dropdown-item">
+                    <button type="button" name="export_pdf" class="btn dropdown-item" onclick="exportPdf()">
                         <i class="fas fa-file-pdf" style="color: #ff4343;"></i> PDF
                     </button>
                 </form>
