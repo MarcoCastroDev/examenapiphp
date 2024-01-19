@@ -89,13 +89,15 @@ $totalPaginas = ceil($totalRegistros / $registrosPorPagina);
 $filteredDataPaginado = array_slice($filteredData, $offset, $registrosPorPagina);
 
 $conn = null;
-// Exportación a Excel
-if (isset($_POST['export_excel'])) {
-    exportToExcel($filteredData);
-}
+// // Exportación a Excel
+// if (isset($_POST['export_excel'])) {
+//     exportToExcel($filteredDataPaginado);
+//     exit;
+// }
 // Exportación a PDF
 if (isset($_POST['export_pdf'])) {
-    exportToPDF($filteredData);
+    exportToPDF($filteredDataPaginado);
+    exit;
 }
 ?>
 
@@ -114,6 +116,10 @@ if (isset($_POST['export_pdf'])) {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
         crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.4/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="./js/exportExcel.js"></script>
+
 </head>
 
 <body>
@@ -132,8 +138,8 @@ if (isset($_POST['export_pdf'])) {
                 <i class="fas fa-file-export"></i> Exportar
             </button>
             <ul class="dropdown-menu">
-                <form method="post">
-                    <button type="submit" name="export_excel" class="btn dropdown-item">
+                <form>
+                    <button type="button" name="export_excel" class="btn dropdown-item" onclick="exportExcel()">
                         <i class="fas fa-file-excel" style="color: #217346;"></i> Excel
                     </button>
                     <button type="submit" name="export_pdf" class="btn dropdown-item">
@@ -238,36 +244,38 @@ if (isset($_POST['export_pdf'])) {
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-            const noResultsRow = document.getElementById('noResultsRow');
-            const searchInput = document.getElementById('searchInput');
-            const dataTable = document.getElementById('dataTable');
+        const noResultsRow = document.getElementById('noResultsRow');
+        const searchInput = document.getElementById('searchInput');
+        const dataTable = document.getElementById('dataTable');
 
-            searchInput.addEventListener('input', function () {
-                const searchTerm = searchInput.value.toUpperCase();
-                const tableRows = dataTable.querySelectorAll('tbody tr:not(#noResultsRow)');
+        searchInput.addEventListener('input', function () {
+            const searchTerm = searchInput.value.toUpperCase();
+            const tableRows = dataTable.querySelectorAll('tbody tr:not(#noResultsRow)');
 
-                let hasResults = false;
+            let hasResults = false;
 
-                tableRows.forEach(row => {
-                    const sku = row.cells[1].textContent.toUpperCase();
-                    const skuName = row.cells[2].textContent.toUpperCase();
-                    const warehouse = row.cells[0].textContent.toUpperCase();
+            tableRows.forEach(row => {
+                const sku = row.cells[1].textContent.toUpperCase();
+                const skuName = row.cells[2].textContent.toUpperCase();
+                const warehouse = row.cells[0].textContent.toUpperCase();
 
-                    if (sku.includes(searchTerm) || skuName.includes(searchTerm) || warehouse.includes(searchTerm)) {
-                        row.style.display = '';
-                        hasResults = true;
-                    } else {
-                        row.style.display = 'none';
-                    }
-                });
-
-                // Mostrar u ocultar la fila especial según si hay resultados
-                noResultsRow.style.display = hasResults ? 'none' : '';
+                if (sku.includes(searchTerm) || skuName.includes(searchTerm) || warehouse.includes(searchTerm)) {
+                    row.style.display = '';
+                    hasResults = true;
+                } else {
+                    row.style.display = 'none';
+                }
             });
+
+            // Mostrar u ocultar la fila especial según si hay resultados
+            noResultsRow.style.display = hasResults ? 'none' : '';
         });
+    });
+
     function mayus(e) {
         e.value = e.value.toUpperCase();
     }
+
 </script>
 
 <style>
