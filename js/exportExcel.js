@@ -8,7 +8,6 @@ function exportExcel() {
   ).filter((row) => row.style.display !== "none");
 
   // Iterar sobre las filas de la tabla y agregar datos al array
-  var row = 5;
   visibleRows.forEach(function (row) {
     var cells = row.cells;
     var item = {
@@ -28,21 +27,135 @@ function exportExcel() {
     return;
   }
 
-  // Crear una hoja de cálculo
-  var ws = XLSX.utils.json_to_sheet(data);
+  // Crear un libro de trabajo
+  var workbook = new ExcelJS.Workbook();
+  var worksheet = workbook.addWorksheet("Inventario");
+
+  // Configurar estilo para el encabezado
+  var headerStyle = {
+    fill: {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "019a32" },
+    },
+    font: {
+      name: "Century Gothic",
+      size: 12,
+      bold: true,
+      color: { argb: "FFFFFF" },
+    },
+    alignment: {
+      horizontal: "center",
+      vertical: "center",
+    },
+  };
+
+  // Configurar estilos adicionales
+  var styleArray = {
+    font: {
+      name: "Century Gothic",
+      size: 12,
+    },
+    alignment: {
+      horizontal: "center",
+      vertical: "center",
+    },
+  };
+
+  // Configurar estilo para la columna "SKU NAME"
+  var skuNameStyle = {
+    alignment: {
+      horizontal: "left",
+      vertical: "center",
+    },
+  };
 
   // Obtener las celdas de la primera fila
-  var headerCells = Object.keys(ws).filter((cell) => cell.startsWith("A1:"));
+  var headerCells = table.querySelectorAll("thead th");
 
-  // Aplicar estilo a las celdas de encabezado
-  headerCells.forEach((cell) => {
-    ws[cell].s = { fill: { fgColor: { rgb: "3498db" } } };
+  // Agregar las celdas de encabezado al archivo Excel
+  headerCells.forEach(function (headerCell, index) {
+    worksheet.getCell(1, index + 1).value = headerCell.textContent.trim();
+    worksheet.getCell(1, index + 1).style = headerStyle;
   });
 
-  // Crear un libro de trabajo
-  var wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Inventario");
+  // Agregar datos al archivo Excel
+  data.forEach(function (item, rowIndex) {
+    Object.keys(item).forEach(function (key, colIndex) {
+      var cell = worksheet.getCell(rowIndex + 2, colIndex + 1);
+      cell.value = item[key];
 
-  // Guardar el archivo
-  XLSX.writeFile(wb, "Export_Excel.xlsx");
+      // Aplicar estilos adicionales según la columna
+      if (key === "SKU NAME") {
+        Object.assign(cell.style, styleArray, skuNameStyle);
+      } else {
+        Object.assign(cell.style, styleArray);
+      }
+
+      // Cambiar el color del texto solo en la columna "Diferencia"
+      if (key === "Diferencia") {
+        if (item[key] < 0) {
+          // Rojo para valores negativos
+          cell.font = { color: { argb: "FF0000" }, ...styleArray.font };
+        } else if (item[key] === 0) {
+          // Azul para valores iguales a 0
+          cell.font = { color: { argb: "0000FF" }, ...styleArray.font };
+        } else {
+          // Verde para valores positivos
+          cell.font = { color: { argb: "00FF00" }, ...styleArray.font };
+        }
+      }
+    });
+  });
+
+  // Ajustar automáticamente el ancho de cada columna
+  worksheet.columns.forEach(function (column, colIndex) {
+    // Establecer el ancho de la columna según tus necesidades
+    switch (colIndex) {
+      case 0:
+        column.width = 15; // Ancho para la primera columna
+        break;
+      case 1:
+        column.width = 30; // Ancho para la segunda columna
+        break;
+      case 2:
+        column.width = 80; // Ancho para la tercera columna
+        break;
+      case 3:
+        column.width = 20; // Ancho para la cuarta columna
+        break;
+      case 4:
+        column.width = 15; // Ancho para la quinta columna
+        break;
+      case 5:
+        column.width = 15; // Ancho para la sexta columna
+        break;
+      default:
+        column.width = 20; // Ancho predeterminado para otras columnas
+        break;
+    }
+  });
+
+  // Generar el nombre del archivo con la fecha y hora actual
+  var now = new Date();
+  var fileName =
+    "Reporte_OBvsBuffer_" +
+    now.getFullYear() +
+    "_" +
+    ("0" + (now.getMonth() + 1)).slice(-2) +
+    "_" +
+    ("0" + now.getDate()).slice(-2) +
+    "_" +
+    ("0" + now.getHours()).slice(-2) +
+    "/" +
+    ("0" + now.getMinutes()).slice(-2) +
+    ".xlsx";
+
+  // Descargar el nuevo archivo
+  workbook.xlsx.writeBuffer().then(function (buffer) {
+    var blob = new Blob([buffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    saveAs(blob, fileName);
+  });
 }
