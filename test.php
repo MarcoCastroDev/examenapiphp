@@ -9,8 +9,8 @@ $token = "Kze7r3s6oHvHBgIfpOlZD5RFTHZqHPEhrx0h7ngiJnoHq9yBUYjP7zYXtigTRKFCEIZ3Yw
 $endpoint = 'https://api.onebeat.co/v1/exporters/targets?account_id=4756a8d4-ce6c-47b5-b4e3-fa924fe71d88';
 // Datos de conexión a SQL
 $server = '172.19.0.31';
-$user = 'Programador4';
-$password = 'SAPFrogs13';
+$user = 'react';
+$password = 'SAPFrogs09';
 $database = 'Siti';
 
 // Obtener datos de la API
@@ -102,10 +102,12 @@ $conn = null;
     <!-- Llamado de Bootsrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <link rel="stylesheet" href="./css/styles.css">
     <script src="https://kit.fontawesome.com/a4ee172207.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
         crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.4/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -149,10 +151,20 @@ $conn = null;
             <div class="input-group">
                 <input type="text" class="form-control" id="searchInput" name="search"
                     placeholder="SKU / SKU name / Warehouse" onkeyup="mayus(this);" value="<?= $searchTerm ?>">
-                <button class="btn btn-primary">Buscar</button>
             </div>
         </div>
     </div>
+    <div class="m-5">
+        <label for="agrupadoPor" class="form-label">Agrupador:</label>
+        <select class="form-select w-25" id="agrupadoPor">
+            <option value="1">Región</option>
+            <option value="2">Plaza</option>
+            <option value="3">Tienda</option>
+        </select>
+    </div>
+    <!-- Contenedor para opciones dinámicas -->
+    <div id="opcionVision" class="m-5" style="width: 186vh;"></div>
+
     <!--Tabla de datos -->
     <table border="1" class="table m-5" id="dataTable" style="width: 186vh; ">
         <thead>
@@ -244,8 +256,14 @@ $conn = null;
         const noResultsRow = document.getElementById('noResultsRow');
         const searchInput = document.getElementById('searchInput');
         const dataTable = document.getElementById('dataTable');
+        const filterForm = document.getElementById('filterForm');
 
-        searchInput.addEventListener('input', function () {
+        filterForm.addEventListener('submit', function (event) {
+            event.preventDefault(); // Evitar la recarga de la página al enviar el formulario
+            applyFilters();
+        });
+
+        function applyFilters() {
             const searchTerm = searchInput.value.toUpperCase();
             const tableRows = dataTable.querySelectorAll('tbody tr:not(#noResultsRow)');
 
@@ -256,7 +274,15 @@ $conn = null;
                 const skuName = row.cells[2].textContent.toUpperCase();
                 const warehouse = row.cells[0].textContent.toUpperCase();
 
-                if (sku.includes(searchTerm) || skuName.includes(searchTerm) || warehouse.includes(searchTerm)) {
+                // Obtener valores de los checkboxes
+                const filterWarehouse = document.getElementById('filterWarehouse').checked;
+                const filterSKU = document.getElementById('filterSKU').checked;
+
+                // Aplicar filtros
+                const warehouseMatch = !filterWarehouse || warehouse.includes(searchTerm);
+                const skuMatch = !filterSKU || sku.includes(searchTerm);
+
+                if (skuMatch && warehouseMatch) {
                     row.style.display = '';
                     hasResults = true;
                 } else {
@@ -266,12 +292,191 @@ $conn = null;
 
             // Mostrar u ocultar la fila especial según si hay resultados
             noResultsRow.style.display = hasResults ? 'none' : '';
-        });
+        }
     });
+
 
     function mayus(e) {
         e.value = e.value.toUpperCase();
     }
+
+    $(function () {
+        $("#agrupadoPor").change();
+    });
+
+    $(document).ready(function () {
+        // Manejo del cambio en el agrupador
+        $("#agrupadoPor").on("change", function () {
+            var contOpcionVision = "";
+
+            switch ($(this).val()) {
+                case '1'://regiones
+                    console.log('Entró al case 1');
+                    contOpcionVision += "<span class='titulodiv50' id='contPlazadv50'>Regiones</span>";
+                    <?php
+                    $connectionInfo = array("Database" => "BDGrupoS_Buena", "UID" => $user, "PWD" => $password);
+                    $conn = sqlsrv_connect($server, $connectionInfo);
+                    if ($conn === false) {
+                        die(print_r(sqlsrv_errors(), true));
+                    }
+
+                    $sql = "SELECT Code,Code + '  ' +  Name Name  FROM BDGrupoS_Buena..[@BYS_REGIONES_WHS] WHERE Code NOT IN (04,05) ORDER BY Code;";
+
+                    $stmt = sqlsrv_query($conn, $sql);
+                    if ($stmt === false) {
+                        die(print_r(sqlsrv_errors(), true));
+                    }
+                    echo "contOpcionVision += '<div class=\"form-check ms-3 mt-2\"><input class=\"form-check-input\" type=\"checkbox\" id=\"region_all\"><label class=\"form-check-label\" for=\"region_all\">Seleccionar Todo</label></div>';";
+
+                    echo "contOpcionVision += '<div class=\"row ms-3\">';";
+
+                    while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+                        echo "contOpcionVision += '<div class=\"col-md-3 form-check\" iden=\"" . $row['Code'] . "\"><input class=\"form-check-input\" type=\"checkbox\" id=\"region_" . $row['Code'] . "\" /><label class=\"form-check-label\" for=\"region_" . $row['Code'] . "\">" . $row['Name'] . "</label></div>';";
+                    }
+
+                    echo "contOpcionVision += '</div>';";
+                    ?>
+                    break;
+                case '2'://plazas
+                    console.log('Entró al case 2');
+                    contOpcionVision += "<span class='titulodiv50' id='contPlazadv50'>Plazas</span>";
+
+                    <?php
+                    $connectionInfo = array("Database" => "BDGrupoS_Buena", "UID" => $user, "PWD" => $password);
+                    $conn = sqlsrv_connect($server, $connectionInfo);
+                    if ($conn === false) {
+                        die(print_r(sqlsrv_errors(), true));
+                    }
+
+                    $sql = "SELECT Code,Location FROM BDGrupoS_Buena..OLCT WHERE Code not in (5,11,12,9,10,13,14,15,16,17,18)";
+
+                    $stmt = sqlsrv_query($conn, $sql);
+                    if ($stmt === false) {
+                        die(print_r(sqlsrv_errors(), true));
+                    }
+                    echo "contOpcionVision += '<div class=\"form-check ms-3 mt-2\"><label class=\"form-check-label\" for=\"region_all\"><input class=\"form-check-input\" type=\"checkbox\" id=\"region_all\" />Seleccionar Todo</label></div>';";
+
+                    echo "contOpcionVision += '<div class=\"row ms-3\">';";
+
+                    while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+                        echo "contOpcionVision += '<div class=\"col-md-3 form-check contOpcion" . $row['Location'] . "\" id=\"" . $row['Code'] . "\"><label class=\"form-check-label\" for=\"region_" . $row['Code'] . "\"><input class=\"form-check-input\" type=\"checkbox\" id=\"region_" . $row['Code'] . "\" />" . $row['Location'] . "</label></div>';";
+                    }
+
+                    echo "contOpcionVision += '</div>';";
+
+                    ?>
+                    break;
+                case '3'://Tiendas
+                    console.log('Entró al case 3');
+                    contOpcionVision += "<div class='div50'>";
+                    contOpcionVision += "<span class='titulodiv50' id='contPlazadv50'>Plazas</span>";
+                    <?php
+                    $connectionInfo = array("Database" => "BDGrupoS_Buena", "UID" => $user, "PWD" => $password);
+                    $conn = sqlsrv_connect($server, $connectionInfo);
+                    if ($conn === false) {
+                        die(print_r(sqlsrv_errors(), true));
+                    }
+
+                    $sql = "SELECT Code,Location FROM BDGrupoS_Buena..OLCT WHERE Code not in (5,11,12,9,10,13,14,15,16,17,18)";
+
+                    $stmt = sqlsrv_query($conn, $sql);
+                    if ($stmt === false) {
+                        die(print_r(sqlsrv_errors(), true));
+                    }
+                    echo "contOpcionVision += '<div class=\"form-check ms-3 mt-2\"><input class=\"form-check-input\" type=\"checkbox\" id=\"region_all\"><label class=\"form-check-label\" for=\"region_all\">Seleccionar Todo</label></div>';";
+                    echo "contOpcionVision += '<div class=\"row ms-3\">';";
+
+                    while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+                        echo "contOpcionVision += '<div class=\"col-md-3 form-check\"><input class=\"form-check-input\" type=\"checkbox\" id=\"region_" . $row['Code'] . "\"><label class=\"form-check-label\" for=\"region_" . $row['Code'] . "\">" . $row['Location'] . "</label></div>';";
+                    }
+
+                    echo "contOpcionVision += '</div>';";
+                    ?>
+                    contOpcionVision += "</div>";
+                    contOpcionVision += "<div id='contTiendadv50'>";
+                    contOpcionVision += "<span class='titulodiv50' id='contPlazadv50'>Tiendas</span>";
+                    contOpcionVision += "</div>";
+                    break;
+            }
+
+            $("#opcionVision").html(contOpcionVision);
+        });
+
+        $(document).on("change", "#region_all", function () {
+            $(".contOpcion input").prop("checked", $(this).prop("checked"));
+            $(".contOpcion ").last().change();
+        });
+
+        $(document).on("change", ".contOpcion input", function () {
+            todosSeleccionados = true;
+            $(".contOpcion input").each(function () {
+                if (!$(this).prop("checked")) {
+                    todosSeleccionados = false;
+                }
+            });
+            $("#region_all").prop("checked", todosSeleccionados);
+        });
+        $(document).on("change", "#tienda_all", function () {
+
+            $(".div50Tienda input").prop("checked", $(this).prop("checked"));
+            $(".div50Tienda ").last().change();
+        });
+        $(document).on("change", ".div50Tienda input", function () {
+            todosSeleccionados = true;
+            $(".div50Tienda input").each(function () {
+                if (!$(this).prop("checked")) {
+                    todosSeleccionados = false;
+                }
+
+            });
+            $("#tienda_all").prop("checked", todosSeleccionados);
+
+        });
+        $(document).on("change", ".div50Plaza", function () {
+            plazasTiendas = new Array();
+            tiendasCheckeadas = new Array();
+            $(".contOpcion input").each(function () {
+                if ($(this).prop("checked")) {
+                    plazasTiendas.push($(this).attr("id").split("_")[1]);
+                }
+
+            });
+            $("#contTiendadv50").find("input").each(function () {
+                if ($(this).prop("checked")) {
+                    tiendasCheckeadas.push($(this).attr("id"));
+                }
+
+            });
+
+            incluir_bodega = 0;
+
+            var data = {
+                accion: 'CARGATIENDASPORPLAZA',
+                incluir_bodega: incluir_bodega,
+                plazasTiendas: plazasTiendas,
+            };
+            $.ajax({
+                type: 'post',
+                url: 'Php_Scripts/s_rptEncuestaTiendas.php',
+                data: data,
+                async: false,
+                dataType: "json",
+                success: function (ttr) {
+                    $("#contTiendadv50").html("<span  class='titulodiv50'>Tiendas</span>" + ttr['tiendas']);
+                    $.each(tiendasCheckeadas, function (index, val) {
+                        $("#" + val).prop("checked", true);
+
+                    });
+                    $(".div50Tienda ").last().change();
+                }, error: function (ttr) {
+                    console.log(ttr.responseText);
+                    alertt('Error al enviar datos!!!\nPosibles errores:\n-El servidor no ha respondido a su solicitud (inténtelo de nuevo).\n-La sesión ha expirado(actualize la página web o teclee f5).\n-Ha cancelado la peticion al servidor.');
+
+                }
+
+            });
+        });
+    });
 
 </script>
 
@@ -279,6 +484,8 @@ $conn = null;
     body {
         width: 100vw;
         overflow-x: hidden;
+        font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
+        font-size: 14px;
     }
 </style>
 

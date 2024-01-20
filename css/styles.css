@@ -1,0 +1,89 @@
+#aviso-compos-obligatorios {
+    border: 1px solid #CCC;
+    border-radius: 5px;
+    background-color: #FFF;
+    padding: 20px 10px 0 10px;
+    width: auto;
+    float: left;
+    margin-bottom: 10px;
+    margin-left: 30px;
+    box-shadow: 5px 5px 5px #888888;
+}
+
+.opcionLine {
+    min-height: 30px;
+    margin-bottom: 5px;
+}
+
+#opcionVision {
+    width: 100%;
+    border: 1px grey solid;
+    margin-top: 10px;
+    border-radius: 5px;
+    height: 200px;
+    overflow-y: auto;
+}
+
+.contOpcion {
+    width: 14%;
+    float: left;
+    margin-bottom: 5px;
+}
+
+.div50 {
+    width: 49.86%;
+    height: 200px;
+    border-right: 1px gray solid;
+    overflow-y: auto;
+    float: left;
+}
+
+.titulodiv50 {
+    text-align: center;
+    width: 100%;
+    display: block;
+    background: black;
+    color: white;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+#opcionVision[placeholder]:empty:before {
+    content: attr(placeholder);
+    color: #555;
+    font-size: 17px;
+    position: relative;
+    top: 10px;
+    font-size: 13px;
+    color: black;
+    font-weight: bold;
+    left: 10px;
+}
+
+.butonDownStatusBar img {
+    position: absolute;
+    top: 7px;
+    left: 10px;
+}
+
+.butonDownStatusBar {
+    background-color: #EFEFEF;
+    border: 1px solid #CCC;
+    background-position: 5px 5px;
+    font-weight: bold;
+    padding: 8px 10px;
+    text-align: center;
+    border-radius: 5px;
+    position: relative;
+    top: 10px;
+    cursor: pointer;
+}
+
+#consultar {
+    display: block;
+    width: 15px;
+    height: 14px;
+    position: absolute;
+    top: 70px;
+    left: 987px;
+}
