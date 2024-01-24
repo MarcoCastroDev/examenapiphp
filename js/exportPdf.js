@@ -77,9 +77,8 @@ function exportPdf() {
     },
   };
 
-  // Obtener solo las filas visibles en la tabla después de aplicar el filtro
-  // Verificar si hay datos para exportar
-  if (!data.length === 0) {
+  try {
+    // Obtener solo las filas visibles en la tabla después de aplicar el filtro
     var visibleRows = Array.from(
       table.querySelectorAll("tbody tr:not(#noResultsRow)")
     ).filter((row) => row.style.display !== "none");
@@ -107,8 +106,22 @@ function exportPdf() {
       };
       data.push(item);
     });
-  } else {
-    alert("No hay datos para exportar.");
+  }
+  catch {
+    Swal.fire({
+      icon: 'info',
+      title: 'No hay datos para exportar',
+      text: 'Por favor, verifica tus filtros y asegúrate de que haya datos visibles en la tabla.',
+    });
+  }
+
+  // Verificar si hay datos para exportar
+  if (data.length === 0) {
+    Swal.fire({
+      icon: 'info',
+      title: 'No hay datos para exportar',
+      text: 'Por favor, verifica tus filtros y asegúrate de que haya datos visibles en la tabla.',
+    });
     return;
   }
 

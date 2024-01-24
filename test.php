@@ -1,5 +1,5 @@
 <?php
-// require('cargaDatos.php');
+require('cargaDatos.php');
 require('opcionesFiltrado.php');
 ?>
 
@@ -14,30 +14,19 @@ require('opcionesFiltrado.php');
     <!-- Llamado de Bootsrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <!-- Hoja de estilos -->
     <link rel="stylesheet" href="./css/styles.css">
-    <script src="https://kit.fontawesome.com/a4ee172207.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
-        crossorigin="anonymous"></script>
-    <!-- Include jQuery -->
-    <script src="https://code.jquery.com/jquery-3.7.1.js"></script>
     <!-- DataTables CSS -->
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.css" />
-    <!-- DataTables JS -->
-    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.9/pdfmake.min.js"
-        integrity="sha512-5wC3oH3tojdOtHBV6B4TXjlGc0E2uk3YViSrWnv1VUmmVlQDAs1lcupsqqpwjh8jIuodzADYK5xCL5Dkg/ving=="
-        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.68/vfs_fonts.js"></script>
-    <script src="./js/exportExcel.js"></script>
-    <script src="./js/exportPdf.js"></script>
-
+    <!-- Incluir SweetAlert2 CSS con el tema de Bootstrap -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@10.16.6/dist/sweetalert2.min.css">
 </head>
 
 <div id="loadingOverlay" class="overlay" style="display: inline;">
-    <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">Loading...</span>
+    <div class="spinner">
+        <div class="bounce1"></div>
+        <div class="bounce2"></div>
+        <div class="bounce3"></div>
     </div>
 </div>
 
@@ -48,10 +37,7 @@ require('opcionesFiltrado.php');
             alt="" class="navbar-brand m-2">
     </nav>
     <div class="container-fluid">
-        <h1 class="title ms-5 mt-4"><i class="fas fa-clipboard-check p-3" style="color: #00a321;"></i>Reporte de OneBeat
-            vs
-            Buffer
-        </h1>
+        <h1 class="title ms-5 mt-4"><i class="fas fa-clipboard-check p-3" style="color: #00a321;"></i><strong>Reporte de OneBeat vs Buffer</strong></h1>
         <div class="container" style="margin-right: 2rem!important;">
             <div class="d-flex justify-content-end align-items-center">
                 <!-- Botones de Exportar -->
@@ -92,7 +78,7 @@ require('opcionesFiltrado.php');
                                 <label for="agrupadoPor" class="form-label ms-4 mt-2">Agrupador:</label>
                                 <div class="input-group w-50 ms-4" id="agrupadorContent">
                                     <select class="form-select" id="agrupadoPor">
-                                        <option value="1" style="display: none;">Global</option>
+                                        <option value="1">Global</option>
                                         <option value="2" selected>Región</option>
                                         <option value="3">Plaza</option>
                                         <option value="4">Tienda</option>
@@ -122,7 +108,7 @@ require('opcionesFiltrado.php');
                 <th class="text-center">Diferencia</th>
             </thead>
             <tbody>
-                <!-- <?php
+                <?php
                 foreach ($combinedData as $item) {
                     // Verificar si la clave "buffer_sql" existe en el array actual
                     $bufferValue = isset($item['Buffer']) ? $item['Buffer'] : 0;
@@ -161,7 +147,7 @@ require('opcionesFiltrado.php');
 
                     <?php
                 }
-                ?> -->
+                ?>
             </tbody>
             <tfoot>
                 <tr>
@@ -176,6 +162,28 @@ require('opcionesFiltrado.php');
         </table>
     </div>
 </body>
+
+<!-- Incluir FontAwesom y Bootstrap -->
+<script src="https://kit.fontawesome.com/a4ee172207.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
+    crossorigin="anonymous"></script>
+<!-- Include jQuery -->
+<script src="https://code.jquery.com/jquery-3.7.1.js"></script>
+<!-- DataTables JS -->
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.js"></script>
+<!-- Incluir Exportación Excel y PDF -->
+<script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.9/pdfmake.min.js"
+    integrity="sha512-5wC3oH3tojdOtHBV6B4TXjlGc0E2uk3YViSrWnv1VUmmVlQDAs1lcupsqqpwjh8jIuodzADYK5xCL5Dkg/ving=="
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.68/vfs_fonts.js"></script>
+<!-- Incluir SweetAlert2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@10.16.6/dist/sweetalert2.all.min.js"></script>
+<!-- Archivos de exportación -->
+<script src="./js/exportExcel.js"></script>
+<script src="./js/exportPdf.js"></script>
 
 <script>
     $(function () {
@@ -208,9 +216,6 @@ require('opcionesFiltrado.php');
                 var contOpcionVision = "";
 
                 switch ($(this).val()) {
-                    case '1'://global
-
-                    break;
                     case '2'://regiones
                         contOpcionVision += "<span class='titulodiv50 bg-dark' id='contPlazadv50'>Regiones</span>";
                         <?php
@@ -234,7 +239,7 @@ require('opcionesFiltrado.php');
 
                         ?>
                         break;
-                    case '2'://plazas
+                    case '3'://plazas
                         contOpcionVision += "<span class='titulodiv50 bg-dark ' id='contPlazadv50'>Plazas</span>";
 
                         <?php
@@ -250,10 +255,10 @@ require('opcionesFiltrado.php');
                         if ($stmt === false) {
                             die(print_r(sqlsrv_errors(), true));
                         }
-                        echo "contOpcionVision+=" . '"' . "<div class='p-1' ><label for='region_all' ><input class='me-1' type='checkbox' id='region_all' />Seleccionar Todo</label></div>" . '"' . ";";
+                        echo "contOpcionVision+=" . '"' . "<div class='p-1' ><label for='plaza_all' ><input class='me-1' type='checkbox' id='plaza_all' />Seleccionar Todo</label></div>" . '"' . ";";
 
                         while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-                            echo "contOpcionVision+=" . '"' . "<div class='contOpcion P_" . $row['Location'] . "' idplaza='" . $row['Code'] . "' ><label class='p-1 me-2' for='region_" . $row['Code'] . "' ><input class='me-1' type='checkbox' id='region_" . $row['Code'] . "' />" . $row['Location'] . "</label></div>" . '"' . ";";
+                            echo "contOpcionVision+=" . '"' . "<div class='contOpcion P_" . $row['Location'] . "' idplaza='" . $row['Code'] . "' ><label class='p-1 me-2' for='plaza_" . $row['Code'] . "' ><input class='me-1' type='checkbox' id='plaza_" . $row['Code'] . "' />" . $row['Location'] . "</label></div>" . '"' . ";";
                         }
 
                         ?>
@@ -361,8 +366,25 @@ require('opcionesFiltrado.php');
                         });
                         $(".div50Tienda ").last().change();
                     }, error: function (ttr) {
-                        console.log(ttr.responseText);
-                        alert('Error al enviar datos!!!\nPosibles errores:\n-El servidor no ha respondido a su solicitud (inténtelo de nuevo).\n-La sesión ha expirado(actualize la página web o teclee f5).\n-Ha cancelado la peticion al servidor.');
+                        // Utilizar SweetAlert2 para mostrar un mensaje de error
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error al enviar datos',
+                            text: 'Posibles errores:\n- El servidor no ha respondido a su solicitud (inténtelo de nuevo).\n- La sesión ha expirado (actualize la página web o teclee F5).\n- Ha cancelado la petición al servidor.',
+                            confirmButtonText: 'Aceptar',
+                            customClass: {
+                                container: 'sweetalert-container',
+                                popup: 'sweetalert-popup',
+                                header: 'sweetalert-header',
+                                title: 'sweetalert-title',
+                                closeButton: 'sweetalert-close-button',
+                                icon: 'sweetalert-icon',
+                                text: 'sweetalert-text',
+                                footer: 'sweetalert-footer',
+                                confirmButton: 'sweetalert-confirm-button',
+                                cancelButton: 'sweetalert-cancel-button',
+                            }
+                        });
 
                     }
 
@@ -387,55 +409,123 @@ require('opcionesFiltrado.php');
 
                 $("#opcionVision").css("border-color", "#808080");
 
+                // console.log(agrupacion);
+
                 switch (agrupacion) {
-                    case '1'://region
+                    case '1'://global
+                        auxAgrupacion = [];
+                        banderaauxAgrupacion = true;
+                        break;
+                    case '2'://region
                         $(".contOpcion").find("input").each(function () {
                             if ($(this).prop("checked")) {
                                 var idRegion = $(this).attr("id");
+                                console.log(idRegion);
                                 if (idRegion) {
                                     auxAgrupacion.push(idRegion.split("_")[1]);
+                                    console.log(auxAgrupacion);
+                                    console.log(agrupacion);
                                 }
                                 banderaauxAgrupacion = true;
+                                console.log(banderaauxAgrupacion);
                             }
                         });
                         if (!banderaauxAgrupacion) {
                             $("#opcionVision").css("border-color", "red");
-                            alert("Es necesario que seleccione por lo menos una opcion, en la selección de regiones");
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error de selección',
+                                text: 'Es necesario que seleccione por lo menos una opción, en la selección de regiones',
+                                confirmButtonText: 'Aceptar',
+                                customClass: {
+                                    container: 'sweetalert-container',
+                                    popup: 'sweetalert-popup',
+                                    header: 'sweetalert-header',
+                                    title: 'sweetalert-title',
+                                    closeButton: 'sweetalert-close-button',
+                                    icon: 'sweetalert-icon',
+                                    text: 'sweetalert-text',
+                                    footer: 'sweetalert-footer',
+                                    confirmButton: 'sweetalert-confirm-button',
+                                    cancelButton: 'sweetalert-cancel-button',
+                                }
+                            });
                             return false;
                         }
                         break;
-                    case '2'://plaza
+                    case '3'://plaza
                         $(".contOpcion").find("input").each(function () {
-
                             if ($(this).prop("checked")) {
                                 var idPlaza = $(this).attr("id");
+                                console.log(idPlaza);
                                 if (idPlaza) {
                                     auxAgrupacion.push(idPlaza.split("_")[1]);
+                                    console.log(agrupacion);
+                                    console.log(auxAgrupacion);
                                 }
                                 banderaauxAgrupacion = true;
+                                console.log(banderaauxAgrupacion);
                             }
                         });
                         if (!banderaauxAgrupacion) {
                             $("#opcionVision").css("border-color", "red");
-                            alert("Es necesario que seleccione por lo menos una opcion, en la selección de plazas");
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error de selección',
+                                text: 'Es necesario que seleccione por lo menos una opción, en la selección de plazas',
+                                confirmButtonText: 'Aceptar',
+                                customClass: {
+                                    container: 'sweetalert-container',
+                                    popup: 'sweetalert-popup',
+                                    header: 'sweetalert-header',
+                                    title: 'sweetalert-title',
+                                    closeButton: 'sweetalert-close-button',
+                                    icon: 'sweetalert-icon',
+                                    text: 'sweetalert-text',
+                                    footer: 'sweetalert-footer',
+                                    confirmButton: 'sweetalert-confirm-button',
+                                    cancelButton: 'sweetalert-cancel-button',
+                                }
+                            });
                             return false;
                         }
                         break;
-                    case '3'://tienda
+                    case '4'://tienda
                         $("#contTiendadv50").find("input").each(function () {
                             if ($(this).prop("checked")) {
                                 var idTienda = $(this).attr("id");
+                                console.log(idTienda);
                                 if (idTienda) {
                                     auxAgrupacion.push(idTienda.split("_")[1]);
+                                    console.log(agrupacion);
+                                    console.log(auxAgrupacion);
                                 }
                                 banderaauxAgrupacion = true;
+                                console.log(banderaauxAgrupacion);
                             }
 
 
                         });
                         if (!banderaauxAgrupacion) {
                             $("#opcionVision").css("border-color", "red");
-                            alert("Es necesario que seleccione por lo menos una opcion, en la selección de tiendas");
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error de selección',
+                                text: 'Es necesario que seleccione por lo menos una opción, en la selección de tiendas',
+                                confirmButtonText: 'Aceptar',
+                                customClass: {
+                                    container: 'sweetalert-container',
+                                    popup: 'sweetalert-popup',
+                                    header: 'sweetalert-header',
+                                    title: 'sweetalert-title',
+                                    closeButton: 'sweetalert-close-button',
+                                    icon: 'sweetalert-icon',
+                                    text: 'sweetalert-text',
+                                    footer: 'sweetalert-footer',
+                                    confirmButton: 'sweetalert-confirm-button',
+                                    cancelButton: 'sweetalert-cancel-button',
+                                }
+                            });
                             return false;
                         }
                         break;
@@ -449,8 +539,8 @@ require('opcionesFiltrado.php');
                     auxAgrupacion: auxAgrupacion,
                 };
                 $('#loadingOverlay').show();
-                console.log(agrupacion);
-                console.log(auxAgrupacion);
+                // console.log(agrupacion);
+                // console.log(auxAgrupacion);
                 $.ajax({
                     type: 'post',
                     url: './opcionesFiltrado.php',
@@ -461,7 +551,7 @@ require('opcionesFiltrado.php');
                         $('#loadingOverlay').show();
                     },
                     success: function (response) {
-                        console.log('Número de filas en la respuesta:', response.length);
+                        // console.log('Número de filas en la respuesta:', response.length);
 
                         // Limpiar la tabla y destruir la instancia DataTable
                         $('#dataTable tbody').empty();
@@ -493,16 +583,19 @@ require('opcionesFiltrado.php');
                                 } else {
                                     classStyle = 'text-danger';
                                 }
+                                const textCenter = 'text-center'
 
                                 // Crear la fila de la tabla con datos del objeto
                                 var row = document.createElement('tr');
 
                                 var tdLocationsExternalId = document.createElement('td');
                                 tdLocationsExternalId.textContent = item.locations_external_id;
+                                tdLocationsExternalId.classList.add(textCenter);
                                 row.appendChild(tdLocationsExternalId);
 
                                 var tdSkusExternalId = document.createElement('td');
                                 tdSkusExternalId.textContent = item.skus_external_id;
+                                tdSkusExternalId.classList.add(textCenter);
                                 row.appendChild(tdSkusExternalId);
 
                                 var tdSkuName = document.createElement('td');
@@ -511,15 +604,19 @@ require('opcionesFiltrado.php');
 
                                 var tdPackConstraint = document.createElement('td');
                                 tdPackConstraint.textContent = item.pack_constraint;
+                                tdPackConstraint.classList.add(textCenter);
                                 row.appendChild(tdPackConstraint);
 
                                 var tdBuffer = document.createElement('td');
                                 tdBuffer.textContent = bufferValue;
+                                tdBuffer.classList.add(textCenter);
                                 row.appendChild(tdBuffer);
 
                                 var tdDiferencia = document.createElement('td');
                                 tdDiferencia.textContent = diferencia;
                                 tdDiferencia.classList.add(classStyle);
+                                tdDiferencia.classList.add(textCenter);
+                                console.log(tdDiferencia);
                                 row.appendChild(tdDiferencia);
 
                                 // Agregar la fila al fragmento
@@ -546,8 +643,6 @@ require('opcionesFiltrado.php');
                             });
 
                             $('#opcionesModal').modal('hide');
-
-                            console.log('Datos cargados correctamente.');
                         } else {
                             // Volver a inicializar DataTable
                             dataTableInstance = new DataTable('#dataTable', {
@@ -566,13 +661,49 @@ require('opcionesFiltrado.php');
                             });
 
                             $('#opcionesModal').modal('hide');
-                            alert('La respuesta no es un array o no tiene datos.');
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: 'La respuesta no es un array o no tiene datos.',
+                                confirmButtonText: 'Aceptar',
+                                customClass: {
+                                    container: 'sweetalert-container',
+                                    popup: 'sweetalert-popup',
+                                    header: 'sweetalert-header',
+                                    title: 'sweetalert-title',
+                                    closeButton: 'sweetalert-close-button',
+                                    icon: 'sweetalert-icon',
+                                    text: 'sweetalert-text',
+                                    footer: 'sweetalert-footer',
+                                    confirmButton: 'sweetalert-confirm-button',
+                                    cancelButton: 'sweetalert-cancel-button',
+                                }
+                            });
+
                         }
                         // Ocultar el loader después de cargar los datos
                         $('#loadingOverlay').hide();
                     },
                     error: function (xhr, status, error) {
-                        console.error('Error en la solicitud AJAX:', xhr.responseText);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error en la solicitud AJAX',
+                            html: xhr.responseText.replace(/<br \/>/g, ''),
+                            confirmButtonText: 'Aceptar',
+                            customClass: {
+                                container: 'sweetalert-container',
+                                popup: 'sweetalert-popup',
+                                header: 'sweetalert-header',
+                                title: 'sweetalert-title',
+                                closeButton: 'sweetalert-close-button',
+                                icon: 'sweetalert-icon',
+                                text: 'sweetalert-text',
+                                footer: 'sweetalert-footer',
+                                confirmButton: 'sweetalert-confirm-button',
+                                cancelButton: 'sweetalert-cancel-button',
+                            }
+                        });
+
 
                         // Ocultar el loader en caso de error
                         $('#loadingOverlay').hide();
@@ -585,14 +716,5 @@ require('opcionesFiltrado.php');
     });
 
 </script>
-
-<style>
-    body {
-        width: 100vw;
-        overflow-x: hidden;
-        font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
-        font-size: 14px;
-    }
-</style>
 
 </html>

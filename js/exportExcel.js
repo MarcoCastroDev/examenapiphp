@@ -7,9 +7,8 @@ function exportExcel() {
     table.querySelectorAll("tbody tr:not(#noResultsRow)")
   ).filter((row) => row.style.display !== "none");
 
-  // Iterar sobre las filas de la tabla y agregar datos al array
-  // Verificar si hay datos para exportar
-  if (!data.length === 0) {
+  try {
+    // Iterar sobre las filas de la tabla y agregar datos al array
     visibleRows.forEach(function (row) {
       var cells = row.cells;
       var item = {
@@ -22,10 +21,25 @@ function exportExcel() {
       };
       data.push(item);
     });
-  } else {
-    alert("No hay datos para exportar.");
+  }
+  catch {
+    Swal.fire({
+      icon: 'info',
+      title: 'No hay datos para exportar',
+      text: 'Por favor, verifica tus filtros y asegúrate de que haya datos visibles en la tabla.',
+    });
+  }
+
+  // Verificar si hay datos para exportar
+  if (data.length === 0) {
+    Swal.fire({
+      icon: 'info',
+      title: 'No hay datos para exportar',
+      text: 'Por favor, verifica tus filtros y asegúrate de que haya datos visibles en la tabla.',
+    });
     return;
   }
+
   // Crear un libro de trabajo
   var workbook = new ExcelJS.Workbook();
   var worksheet = workbook.addWorksheet("Inventario");

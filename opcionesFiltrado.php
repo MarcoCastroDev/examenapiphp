@@ -60,8 +60,8 @@ switch ($accion) {
             $password = 'SAPFrogs09';
             $database = 'Siti';
 
-            $plazasTiendas = join(",", $_POST['plazasTiendas']);
-            $auxAgrupacion = join(",", $_POST['auxAgrupacion']);
+            $plazasTiendas = isset($_POST['plazasTiendas']) && is_array($_POST['plazasTiendas']) ? join(",", $_POST['plazasTiendas']) : '';
+            $auxAgrupacion = isset($_POST['auxAgrupacion']) && is_array($_POST['auxAgrupacion']) ? join(",", $_POST['auxAgrupacion']) : '';
             // Obtener conexión a la base de datos
             $conn = getDatabaseConnection($server, $user, $password, $database);
 
