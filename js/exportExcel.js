@@ -8,25 +8,24 @@ function exportExcel() {
   ).filter((row) => row.style.display !== "none");
 
   // Iterar sobre las filas de la tabla y agregar datos al array
-  visibleRows.forEach(function (row) {
-    var cells = row.cells;
-    var item = {
-      Warehouse: row.cells[0].textContent.trim(),
-      SKU: row.cells[1].textContent.trim(),
-      "SKU NAME": row.cells[2].textContent.trim(),
-      "PACK Constraint": parseInt(row.cells[3].textContent.trim()),
-      Buffer: parseInt(row.cells[4].textContent.trim()),
-      Diferencia: parseInt(row.cells[5].textContent.trim()),
-    };
-    data.push(item);
-  });
-
   // Verificar si hay datos para exportar
-  if (data.length === 0) {
+  if (!data.length === 0) {
+    visibleRows.forEach(function (row) {
+      var cells = row.cells;
+      var item = {
+        Warehouse: row.cells[0].textContent.trim(),
+        SKU: row.cells[1].textContent.trim(),
+        "SKU NAME": row.cells[2].textContent.trim(),
+        "PACK Constraint": parseInt(row.cells[3].textContent.trim()),
+        Buffer: parseInt(row.cells[4].textContent.trim()),
+        Diferencia: parseInt(row.cells[5].textContent.trim()),
+      };
+      data.push(item);
+    });
+  } else {
     alert("No hay datos para exportar.");
     return;
   }
-
   // Crear un libro de trabajo
   var workbook = new ExcelJS.Workbook();
   var worksheet = workbook.addWorksheet("Inventario");

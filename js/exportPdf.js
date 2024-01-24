@@ -78,36 +78,36 @@ function exportPdf() {
   };
 
   // Obtener solo las filas visibles en la tabla después de aplicar el filtro
-  var visibleRows = Array.from(
-    table.querySelectorAll("tbody tr:not(#noResultsRow)")
-  ).filter((row) => row.style.display !== "none");
-
-  // Iterar sobre las filas de la tabla y agregar datos al array
-  visibleRows.forEach(function (row) {
-    var cells = row.cells;
-    var diferenciaValue = parseInt(cells[5].textContent.trim());
-
-    // Establecer el estilo de color según el valor de "Diferencia"
-    var diferenciaStyle =
-      diferenciaValue < 0
-        ? "redText"
-        : diferenciaValue === 0
-          ? "blueText"
-          : "greenText";
-
-    var item = {
-      Warehouse: { text: cells[0].textContent.trim(), style: "centerAligned" },
-      SKU: { text: cells[1].textContent.trim(), style: "centerAligned" },
-      "SKU NAME": { text: cells[2].textContent.trim(), style: "leftAligned" },
-      "PACK Constraint": { text: cells[3].textContent.trim(), style: "centerAligned" },
-      Buffer: { text: cells[4].textContent.trim(), style: "centerAligned" },
-      Diferencia: { text: cells[5].textContent.trim(), style: diferenciaStyle },
-    };
-    data.push(item);
-  });
-
   // Verificar si hay datos para exportar
-  if (data.length === 0) {
+  if (!data.length === 0) {
+    var visibleRows = Array.from(
+      table.querySelectorAll("tbody tr:not(#noResultsRow)")
+    ).filter((row) => row.style.display !== "none");
+
+    // Iterar sobre las filas de la tabla y agregar datos al array
+    visibleRows.forEach(function (row) {
+      var cells = row.cells;
+      var diferenciaValue = parseInt(cells[5].textContent.trim());
+
+      // Establecer el estilo de color según el valor de "Diferencia"
+      var diferenciaStyle =
+        diferenciaValue < 0
+          ? "redText"
+          : diferenciaValue === 0
+            ? "blueText"
+            : "greenText";
+
+      var item = {
+        Warehouse: { text: cells[0].textContent.trim(), style: "centerAligned" },
+        SKU: { text: cells[1].textContent.trim(), style: "centerAligned" },
+        "SKU NAME": { text: cells[2].textContent.trim(), style: "leftAligned" },
+        "PACK Constraint": { text: cells[3].textContent.trim(), style: "centerAligned" },
+        Buffer: { text: cells[4].textContent.trim(), style: "centerAligned" },
+        Diferencia: { text: cells[5].textContent.trim(), style: diferenciaStyle },
+      };
+      data.push(item);
+    });
+  } else {
     alert("No hay datos para exportar.");
     return;
   }
