@@ -1,13 +1,22 @@
+* {
+    font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
+}
+
 body {
     width: 100vw;
     overflow-x: hidden;
-    font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
     font-size: 14px;
 }
 
-.dataTables_wrapper{
+.dataTables_wrapper {
     width: 95%;
-    margin: 3%;
+    margin-left: 4rem !important;
+    margin: 2rem;
+    table-layout: fixed;
+}
+
+#dataTable {
+    table-layout: fixed;
 }
 
 #aviso-compos-obligatorios {
@@ -29,17 +38,19 @@ body {
 
 #opcionVision {
     width: 100%;
-    border: 1px grey solid;
+    border: 1px #808080 solid;
     margin-top: 10px;
     border-radius: 5px;
     height: 200px;
     overflow-y: auto;
+    background-color: white;
 }
 
 .contOpcion {
     width: 14%;
     float: left;
     margin-bottom: 5px;
+    display: contents;
 }
 
 .div50 {
@@ -48,6 +59,7 @@ body {
     border-right: 1px gray solid;
     overflow-y: auto;
     float: left;
+    display: block;
 }
 
 .titulodiv50 {
@@ -101,17 +113,15 @@ body {
 
 .overlay {
     position: fixed;
-    top: 50%;
-    left: 50%;
+    top: 0;
+    left: 0;
     width: 100vw;
     height: 100vh;
     background: rgba(32, 32, 32, 0.7);
-    /* Adjust the opacity as needed */
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 1000;
-    /* Adjust the z-index to make sure it's above other elements */
 }
 
 #loadingOverlay {
@@ -126,4 +136,15 @@ body {
 .spinner-border {
     width: 6rem;
     height: 6rem;
+    position: relative;
+    margin: auto;
+    top: 50%;
+    left: 50%;
+}
+
+.modal-dialog {
+    max-width: 70em;
+    width: 70em;
+    margin-right: auto;
+    margin-left: auto;
 }

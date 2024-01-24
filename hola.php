@@ -327,3 +327,44 @@
 </script>
 
 </html>
+
+                <!-- <?php
+                foreach ($combinedData as $item) {
+                    // Verificar si la clave "buffer_sql" existe en el array actual
+                    $bufferValue = isset($item['Buffer']) ? $item['Buffer'] : 0;
+                    // Calcular la diferencia
+                    $diferencia = $item['pack_constraint'] - $item['Buffer'];
+                    // Determinar la clase de estilo basada en el valor de diferencia
+                    $class = '';
+                    if ($diferencia > 0) {
+                        $class = 'text-primary';
+                    } elseif ($diferencia == 0) {
+                        $class = 'text-success';
+                    } else {
+                        $class = 'text-danger';
+                    }
+                    ?>
+                                    <tr class="justify-content-center">
+                                        <td>
+                                            <?= $item['locations_external_id'] ?>
+                                        </td>
+                                        <td>
+                                            <?= $item['skus_external_id'] ?>
+                                        </td>
+                                        <td>
+                                            <?= $item['sku_name'] ?>
+                                        </td>
+                                        <td>
+                                            <?= $item['pack_constraint'] ?>
+                                        </td>
+                                        <td>
+                                            <?= $item['Buffer'] ?>
+                                        </td>
+                                        <td class="<?= $class ?>">
+                                            <?= $diferencia ?>
+                                        </td>
+                                    </tr>
+                
+                                    <?php
+                }
+                ?> -->

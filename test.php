@@ -1,122 +1,6 @@
 <?php
-require('dbconnection.php');
-require('getapi.php');
-require('exportExcel.php');
-require('exportPdf.php');
-
-function cargarBufferDatos($bufferResult)
-{
-    $bufferData = [];
-
-    // Verificar si se recibieron datos a través de una petición AJAX
-    if ($_SERVER["REQUEST_METHOD"] == "POST") {
-        // Obtener los datos de la petición POST
-        $json_data = file_get_contents("php://input");
-        $data = json_decode($json_data, true);
-
-        // Verificar si se recibieron datos válidos
-        if (!empty($data['bufferData'])) {
-            // Usar los datos de la petición AJAX
-            $bufferData = $data['bufferData'];
-        }
-    }
-
-    // Procesar los resultados del buffer actual
-    while ($row = $bufferResult->fetch(PDO::FETCH_ASSOC)) {
-        // Almacenar datos en el array bufferData
-        $bufferData[strtoupper($row['ItemCode'])][strtoupper($row['Whscode'])] = $row['Buffer'];
-    }
-
-    return $bufferData;
-}
-
-// Datos de conexión a API
-$token = "Kze7r3s6oHvHBgIfpOlZD5RFTHZqHPEhrx0h7ngiJnoHq9yBUYjP7zYXtigTRKFCEIZ3YwSXoNkHsL5qVFLxfNiemzhoHsX3J7fZPVtqVWAUef6Ag96eWAXszJKeyxzweCJ7frvnDLrrxTrh1fBYYhFCBgl0F1AQEfZhqRcwXhp5fTSOdnhJbU9YPNG7h6R6exkGiCOaDt5IwQsGxn4m7X2q3IFaBGDv9cO85dbxdPmjorTQTbXyayUii9cYF4Zp";
-$endpoint = 'https://api.onebeat.co/v1/exporters/targets?account_id=4756a8d4-ce6c-47b5-b4e3-fa924fe71d88';
-// Datos de conexión a SQL
-$server = '172.19.0.31';
-$user = 'react';
-$password = 'SAPFrogs09';
-$database = 'Siti';
-
-// Obtener datos de la API
-$data = fetchDataFromAPI($token, $endpoint);
-// Obtener conexión a la base de datos
-$conn = getDatabaseConnection($server, $user, $password, $database);
-
-// Realizar la consulta SQL para obtener el buffer actual
-$sql = "SELECT ItemCode,Whscode,Buffer FROM (SELECT LEFT(ItemCode,20) ITEMCODE, LEFT(WhsCode,8) WhsCode, Buffer,Empresa, ROW_NUMBER() OVER (PARTITION BY ItemCode, WhsCode,Empresa ORDER BY ItemCode, WhsCode, Fecha DESC, Hora DESC) Num FROM SITI..BYS_Buffer WITH (NOLOCK) WHERE Fecha <= GETDATE() and Empresa = 'BDGRUPOS_BUENA' AND whscode in (select location from onebeat_stock_locations) ) AS Z WHERE Z.NUM=1;";
-$bufferResult = $conn->query($sql);
-
-if (!$bufferResult) {
-    echo "Error en la consulta SQL: " . print_r($conn->errorInfo(), true);
-    exit;
-}
-// Inicializar un array para almacenar los datos del buffer
-$bufferData = [];
-
-// Procesar los resultados del buffer actual
-while ($row = $bufferResult->fetch(PDO::FETCH_ASSOC)) {
-    // Almacenar datos en el array bufferData
-    $bufferData[strtoupper($row['ItemCode'])][strtoupper($row['Whscode'])] = $row['Buffer'];
-}
-
-// Crear arreglo combinado con datos de API y de BD
-$combinedData = [];
-
-foreach ($data['data'] as $apiItem) {
-    $combinedDataItem = $apiItem;
-    $warehouse = strtoupper($apiItem['locations_external_id']);
-    $sku = strtoupper($apiItem['skus_external_id']);
-
-    if (isset($bufferData[$sku])) {
-        foreach ($bufferData[$sku] as $bufferWarehouse => $bufferValue) {
-            $bufferWarehouse = trim($bufferWarehouse);
-            if ($warehouse === $bufferWarehouse) {
-                $combinedDataItem['buffer_sql'] = trim($bufferValue);
-                break;
-            }
-        }
-    } else {
-        $combinedDataItem['buffer_sql'] = 0;
-    }
-    // print_r($combinedDataItem);
-    $combinedData[] = $combinedDataItem;
-}
-
-// print_r($combinedData);
-
-// Función de comparación para usort
-function compareWarehouses($a, $b)
-{
-    return strcmp($a['locations_external_id'], $b['locations_external_id']);
-}
-
-// Ordenar el array por el campo "Warehouse"
-usort($combinedData, 'compareWarehouses');
-
-// Configuración de paginación
-$registrosPorPagina = 70;
-$paginaActual = isset($_GET['pagina']) ? $_GET['pagina'] : 1;
-$offset = ($paginaActual - 1) * $registrosPorPagina;
-
-// Filtrar los resultados basados en la búsqueda
-$searchTerm = isset($_GET['search']) ? $_GET['search'] : '';
-$filteredData = array_filter($combinedData, function ($item) use ($searchTerm) {
-    $sku = strtoupper($item['skus_external_id']);
-    $skuName = strtoupper($item['sku_name']);
-    $warehouse = strtoupper($item['locations_external_id']);
-    return strpos($sku, $searchTerm) !== false || strpos($skuName, $searchTerm) !== false || strpos($warehouse, $searchTerm) !== false;
-});
-
-// Recalcular el total de registros y páginas para la nueva búsqueda
-$totalRegistros = count($filteredData);
-$totalPaginas = ceil($totalRegistros / $registrosPorPagina);
-
-// Paginar el array $filteredData
-$filteredDataPaginado = array_slice($filteredData, $offset, $registrosPorPagina);
-
-$conn = null;
+// require('cargaDatos.php');
+require('opcionesFiltrado.php');
 ?>
 
 <!DOCTYPE html>
@@ -137,25 +21,25 @@ $conn = null;
         crossorigin="anonymous"></script>
     <!-- Include jQuery -->
     <script src="https://code.jquery.com/jquery-3.7.1.js"></script>
-
     <!-- DataTables CSS -->
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.css" />
-
     <!-- DataTables JS -->
     <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.js"></script>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.4/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.9/pdfmake.min.js"
         integrity="sha512-5wC3oH3tojdOtHBV6B4TXjlGc0E2uk3YViSrWnv1VUmmVlQDAs1lcupsqqpwjh8jIuodzADYK5xCL5Dkg/ving=="
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.68/vfs_fonts.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <script src="./js/exportExcel.js"></script>
     <script src="./js/exportPdf.js"></script>
 
 </head>
+
+<div id="loadingOverlay" class="overlay" style="display: inline;">
+    <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+</div>
 
 <body>
     <!-- Barra de navegación -->
@@ -164,86 +48,85 @@ $conn = null;
             alt="" class="navbar-brand m-2">
     </nav>
     <div class="container-fluid">
-        <h1 class="title m-5"><i class="fas fa-clipboard-check p-3" style="color: #00a321;"></i>Reporte de OneBeat vs
+        <h1 class="title ms-5 mt-4"><i class="fas fa-clipboard-check p-3" style="color: #00a321;"></i>Reporte de OneBeat
+            vs
             Buffer
         </h1>
-        <!-- Barra de búsqueda -->
-        <!-- <div class="input-group offset-md-7 w-100">
-            <div class="dropdown">
-                <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown"
-                    aria-expanded="false">
-                    <i class="fas fa-file-export"></i> Exportar
+        <div class="container me-3">
+            <div class="d-flex justify-content-end align-items-center">
+                <!-- Botones de Exportar -->
+                <div class="me-5">
+                    <div class="dropdown">
+                        <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown"
+                            aria-expanded="false">
+                            <i class="fas fa-file-export"></i> Exportar
+                        </button>
+                        <ul class="dropdown-menu">
+                            <form>
+                                <button type="button" name="export_excel" class="btn dropdown-item"
+                                    onclick="exportExcel()">
+                                    <i class="fas fa-file-excel" style="color: #217346;"></i> Excel
+                                </button>
+                                <button type="button" name="export_pdf" class="btn dropdown-item" onclick="exportPdf()">
+                                    <i class="fas fa-file-pdf" style="color: #ff4343;"></i> PDF
+                                </button>
+                            </form>
+                        </ul>
+                    </div>
+                </div>
+                <!-- Botón para abrir el modal -->
+                <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#opcionesModal">
+                    <i class="fa-solid fa-filter me-2"></i>Filtrar Resultados
                 </button>
-                <ul class="dropdown-menu">
-                    <form>
-                        <button type="button" name="export_excel" class="btn dropdown-item" onclick="exportExcel()">
-                            <i class="fas fa-file-excel" style="color: #217346;"></i> Excel
-                        </button>
-                        <button type="button" name="export_pdf" class="btn dropdown-item" onclick="exportPdf()">
-                            <i class="fas fa-file-pdf" style="color: #ff4343;"></i> PDF
-                        </button>
-                    </form>
-                </ul>
-            </div>
-            <div class="ms-2" style="width: 32%;">
-                <div class="input-group">
-                    <input type="text" class="form-control" id="searchInput" name="search"
-                        placeholder="SKU / SKU name / Warehouse" onkeyup="mayus(this);" value="<?= $searchTerm ?>">
+                <!-- Modal -->
+                <div class="modal fade" id="opcionesModal" tabindex="-1" aria-labelledby="opcionesModalLabel"
+                    aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header justify-content-center text-center">
+                                <h5 class="modal-title" id="exampleModalLabel text-center ">Filtrar</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                    aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <label for="agrupadoPor" class="form-label ms-4 mt-2">Agrupador:</label>
+                                <div class="input-group w-50 ms-4" id="agrupadorContent">
+                                    <select class="form-select" id="agrupadoPor">
+                                        <option value="1">Región</option>
+                                        <option value="2">Plaza</option>
+                                        <option value="3">Tienda</option>
+                                    </select>
+                                    <button type="button" class="btn btn-primary" id="buscar">
+                                        <i class="fa-solid fa-magnifying-glass me-1"></i>Buscar
+                                    </button>
+                                </div>
+                                <div id="opcionVision" class="m-4" style="width: 92vh;"></div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div> -->
-        <div class="m-5">
-            <label for="agrupadoPor" class="form-label">Agrupador:</label>
-            <div class="input-group w-25">
-                <select class="form-select w-25" id="agrupadoPor">
-                    <!-- <option value="1">Región</option>
-                    <option value="2">Plaza</option> -->
-                    <option value="3">Tienda</option>
-                </select>
-                <button type="button" class="btn btn-primary" id="buscar"><i
-                        class="fa-solid fa-magnifying-glass me-1"></i>Buscar</button>
-            </div>
-        </div>
-        <!-- Contenedor para opciones dinámicas -->
-        <div id="opcionVision" class="m-5" style="width: 186vh;"></div>
-
-        <div class="dropdown offset-md-12">
-            <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown"
-                aria-expanded="false">
-                <i class="fas fa-file-export"></i> Exportar
-            </button>
-            <ul class="dropdown-menu">
-                <form>
-                    <button type="button" name="export_excel" class="btn dropdown-item" onclick="exportExcel()">
-                        <i class="fas fa-file-excel" style="color: #217346;"></i> Excel
-                    </button>
-                    <button type="button" name="export_pdf" class="btn dropdown-item" onclick="exportPdf()">
-                        <i class="fas fa-file-pdf" style="color: #ff4343;"></i> PDF
-                    </button>
-                </form>
-            </ul>
         </div>
         <!--Tabla de datos -->
-        <!-- <table border="1" class="table m-5" id="dataTable" style="width: 186vh; "> -->
         <table id="dataTable" class="table table-responsive table-striped" style="width: 183vh; ">
             <thead>
-                <th>Warehouse</th>
-                <th>SKU</th>
-                <th>SKU name</th>
-                <th>Pack Constraint</th>
-                <th>Buffer</th>
-                <th>Diferencia</th>
+                <th class="text-center">Warehouse</th>
+                <th class="text-center">SKU</th>
+                <th class="text-center">SKU name</th>
+                <th class="text-center">Pack Constraint</th>
+                <th class="text-center">Buffer</th>
+                <th class="text-center">Diferencia</th>
             </thead>
             <tbody>
-                <!-- <tr id="noResultsRow" class="table-danger" style="display: none;">
-                    <td colspan="6" class="text-center">No se encontraron resultados.</td>
-                </tr> -->
-                <?php
+                <!-- <?php
                 foreach ($combinedData as $item) {
                     // Verificar si la clave "buffer_sql" existe en el array actual
-                    $bufferValue = isset($item['buffer_sql']) ? $item['buffer_sql'] : 0;
+                    $bufferValue = isset($item['Buffer']) ? $item['Buffer'] : 0;
                     // Calcular la diferencia
-                    $diferencia = $item['pack_constraint'] - $bufferValue;
+                    $diferencia = $item['pack_constraint'] - $item['Buffer'];
                     // Determinar la clase de estilo basada en el valor de diferencia
                     $class = '';
                     if ($diferencia > 0) {
@@ -255,81 +138,45 @@ $conn = null;
                     }
                     ?>
                     <tr class="justify-content-center">
-                        <td>
+                        <td class="text-center">
                             <?= $item['locations_external_id'] ?>
                         </td>
-                        <td>
+                        <td class="text-center">
                             <?= $item['skus_external_id'] ?>
                         </td>
                         <td>
                             <?= $item['sku_name'] ?>
                         </td>
-                        <td>
+                        <td class="text-center">
                             <?= $item['pack_constraint'] ?>
                         </td>
-                        <td>
-                            <?= $bufferValue ?>
+                        <td class="text-center">
+                            <?= $item['Buffer'] ?>
                         </td>
-                        <td class="<?= $class ?>">
+                        <td class="<?= $class ?> text-center ">
                             <?= $diferencia ?>
                         </td>
                     </tr>
 
                     <?php
                 }
-                ?>
+                ?> -->
             </tbody>
             <tfoot>
                 <tr>
-                    <th>Warehouse</th>
-                    <th>SKU</th>
-                    <th>SKU name</th>
-                    <th>Pack Constraint</th>
-                    <th>Buffer</th>
-                    <th>Diferencia</th>
+                    <th class="text-center">Warehouse</th>
+                    <th class="text-center">SKU</th>
+                    <th class="text-center">SKU name</th>
+                    <th class="text-center">Pack Constraint</th>
+                    <th class="text-center">Buffer</th>
+                    <th class="text-center">Diferencia</th>
                 </tr>
             </tfoot>
         </table>
-
-        <!-- Paginación -->
-        <div class="d-flex justify-content-center mt-3 position-absolute bottom-25 start-50 translate-middle-x">
-            <ul class="pagination">
-                <?php
-                $urlParams = !empty($searchTerm) ? '&search=' . urlencode($searchTerm) : '';
-                // Botón "Prev"
-                if ($paginaActual > 1) {
-                    echo '<li class="page-item"><a class="page-link" href="?pagina=' . ($paginaActual - 1) . $urlParams . '">Prev</a></li>';
-                }
-                // Páginas intermedias
-                $maxPages = min($totalPaginas, 5);
-                $startPage = max(1, min($paginaActual - floor($maxPages / 2), $totalPaginas - $maxPages + 1));
-                for ($i = $startPage; $i < $startPage + $maxPages; $i++) {
-                    echo '<li class="page-item ' . ($i == $paginaActual ? 'active' : '') . '"><a class="page-link" href="?pagina=' . $i . $urlParams . '">' . $i . '</a></li>';
-                }
-                // Última página
-                if ($paginaActual < $totalPaginas - 2) {
-                    echo '<li class="page-item"><span class="page-link">...</span></li>';
-                    echo '<li class="page-item"><a class="page-link" href="?pagina=' . $totalPaginas . $urlParams . '">' . $totalPaginas . '</a></li>';
-                }
-                // Botón "Next"
-                if ($paginaActual < $totalPaginas) {
-                    echo '<li class="page-item"><a class="page-link" href="?pagina=' . ($paginaActual + 1) . $urlParams . '">Next</a></li>';
-                }
-                ?>
-            </ul>
-        </div>
     </div>
 </body>
 
-<div id="loadingOverlay" class="overlay">
-    <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">Loading...</span>
-    </div>
-</div>
-
 <script>
-    new DataTable('#dataTable');
-
     $(function () {
         $("#agrupadoPor").change();
     });
@@ -339,326 +186,364 @@ $conn = null;
         const dataTable = document.getElementById('dataTable');
         const buscar = document.getElementById('buscar');
 
-        searchInput.addEventListener('input', function () {
-            const searchTerm = searchInput.value.toUpperCase();
-            const tableRows = dataTable.querySelectorAll('tbody tr:not(#noResultsRow)');
-
-            let hasResults = false;
-
-            tableRows.forEach(row => {
-                const sku = row.cells[1].textContent.toUpperCase();
-                const skuName = row.cells[2].textContent.toUpperCase();
-                const warehouse = row.cells[0].textContent.toUpperCase();
-
-                if (sku.includes(searchTerm) || skuName.includes(searchTerm) || warehouse.includes(searchTerm)) {
-                    row.style.display = '';
-                    hasResults = true;
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-
-            // Mostrar u ocultar la fila especial según si hay resultados
-            noResultsRow.style.display = hasResults ? 'none' : '';
-        });
-    });
-    function mayus(e) {
-        e.value = e.value.toUpperCase();
-    }
-
-    $(document).ready(function () {
-        // Manejo del cambio en el agrupador
-        $("#agrupadoPor").on("change", function () {
-            var contOpcionVision = "";
-
-            switch ($(this).val()) {
-                case '1'://regiones
-                    contOpcionVision += "<span class='titulodiv50 bg-dark' id='contPlazadv50'>Regiones</span>";
-                    <?php
-                    $connectionInfo = array("Database" => "BDGrupoS_Buena", "UID" => $user, "PWD" => $password);
-                    $conn = sqlsrv_connect($server, $connectionInfo);
-                    if ($conn === false) {
-                        die(print_r(sqlsrv_errors(), true));
-                    }
-
-                    $sql = "SELECT Code,Code + '  ' +  Name Name  FROM BDGrupoS_Buena..[@BYS_REGIONES_WHS] WHERE Code NOT IN (04,05) ORDER BY Code;";
-
-                    $stmt = sqlsrv_query($conn, $sql);
-                    if ($stmt === false) {
-                        die(print_r(sqlsrv_errors(), true));
-                    }
-                    echo "contOpcionVision+=" . '"' . "<div class='p-1'><label for='region_all' ><input class='me-1' type='checkbox' id='region_all' />Seleccionar Todo</label></div>" . '"' . ";";
-
-                    while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-                        echo "contOpcionVision+=" . '"' . "<div class='p-1 contOpcion' iden='" . $row['Code'] . "' ><label for='region_" . $row['Code'] . "' ><input class='me-1' type='checkbox' id='region_" . $row['Code'] . "' />" . $row['Name'] . "</label></div>" . '"' . ";";
-                    }
-
-                    ?>
-                    break;
-                case '2'://plazas
-                    contOpcionVision += "<span class='titulodiv50 bg-dark ' id='contPlazadv50'>Plazas</span>";
-
-                    <?php
-                    $connectionInfo = array("Database" => "BDGrupoS_Buena", "UID" => $user, "PWD" => $password);
-                    $conn = sqlsrv_connect($server, $connectionInfo);
-                    if ($conn === false) {
-                        die(print_r(sqlsrv_errors(), true));
-                    }
-
-                    $sql = "SELECT Code,Location FROM BDGrupoS_Buena..OLCT WHERE Code not in (5,11,12,9,10,13,14,15,16,17,18)";
-
-                    $stmt = sqlsrv_query($conn, $sql);
-                    if ($stmt === false) {
-                        die(print_r(sqlsrv_errors(), true));
-                    }
-                    echo "contOpcionVision+=" . '"' . "<div class='p-1' ><label for='region_all' ><input class='me-1' type='checkbox' id='region_all' />Seleccionar Todo</label></div>" . '"' . ";";
-
-                    while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-                        echo "contOpcionVision+=" . '"' . "<div class='p-1 contOpcion P_" . $row['Location'] . "' id='" . $row['Code'] . "' ><label for='region_" . $row['Code'] . "' ><input class='me-1' type='checkbox' id='region_" . $row['Code'] . "' />" . $row['Location'] . "</label></div>" . '"' . ";";
-                    }
-
-                    ?>
-                    break;
-                case '3'://Tiendas
-                    contOpcionVision += "<div class='div50'>";
-                    contOpcionVision += "<span class='titulodiv50 bg-dark ' id='contPlazadv50'>Plazas</span>";
-                    <?php
-                    $connectionInfo = array("Database" => "BDGrupoS_Buena", "UID" => $user, "PWD" => $password);
-                    $conn = sqlsrv_connect($server, $connectionInfo);
-                    if ($conn === false) {
-                        die(print_r(sqlsrv_errors(), true));
-                    }
-
-                    $sql = "SELECT Code,Location FROM BDGrupoS_Buena..OLCT WHERE Code not in (5,11,12,9,10,13,14,15,16,17,18)";
-
-                    $stmt = sqlsrv_query($conn, $sql);
-                    if ($stmt === false) {
-                        die(print_r(sqlsrv_errors(), true));
-                    }
-                    echo "contOpcionVision+=" . '"' . "<div class='p-1'' ><label for='region_all' ><input class='me-1' type='checkbox' id='region_all' />Seleccionar Todo</label></div>" . '"' . ";";
-
-                    while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-                        echo "contOpcionVision+=" . '"' . "<div class='p-1 contOpcion div50Plaza P_" . $row['Location'] . "' id='" . $row['Code'] . "' ><label for='region_" . $row['Code'] . "' ><input class='me-1' type='checkbox' id='region_" . $row['Code'] . "' />" . $row['Location'] . "</label></div>" . '"' . ";";
-                    }
-
-                    ?>
-                    contOpcionVision += "</div>";
-                    contOpcionVision += "<div id='contTiendadv50' class='div50'>";
-                    contOpcionVision += "<span class='titulodiv50 bg-dark' id='contPlazadv50'>Tiendas</span>";
-                    contOpcionVision += "</div>";
-                    break;
-            }
-
-            $("#opcionVision").html(contOpcionVision);
+        var dataTableInstance = new DataTable('#dataTable', {
+            language: {
+                search: 'Buscar: ',
+                url: 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-MX.json'
+            },
+            "columns": [
+                { "width": "5%" },
+                { "width": "15%" },
+                { "width": "62%" },
+                { "width": "8%" },
+                { "width": "5%" },
+                { "width": "5%" },
+            ]
         });
 
-        $(document).on("change", "#region_all", function () {
-            $(".contOpcion input").prop("checked", $(this).prop("checked"));
-            $(".contOpcion ").last().change();
-        });
+        $(document).ready(function () {
+            // Manejo del cambio en el agrupador
+            $("#agrupadoPor").on("change", function () {
+                var contOpcionVision = "";
 
-        $(document).on("change", ".contOpcion input", function () {
-            todosSeleccionados = true;
-            $(".contOpcion input").each(function () {
-                if (!$(this).prop("checked")) {
-                    todosSeleccionados = false;
-                }
-            });
-            $("#region_all").prop("checked", todosSeleccionados);
-        });
-        $(document).on("change", "#tienda_all", function () {
-
-            $(".div50Tienda input").prop("checked", $(this).prop("checked"));
-            $(".div50Tienda ").last().change();
-        });
-        $(document).on("change", ".div50Tienda input", function () {
-            todosSeleccionados = true;
-            $(".div50Tienda input").each(function () {
-                if (!$(this).prop("checked")) {
-                    todosSeleccionados = false;
-                }
-
-            });
-            $("#tienda_all").prop("checked", todosSeleccionados);
-
-        });
-        $(document).on("change", ".div50Plaza", function () {
-            plazasTiendas = new Array();
-            tiendasCheckeadas = new Array();
-            $(".contOpcion input").each(function () {
-                if ($(this).prop("checked")) {
-                    plazasTiendas.push($(this).attr("id").split("_")[1]);
-                }
-
-            });
-            $("#contTiendadv50").find("input").each(function () {
-                if ($(this).prop("checked")) {
-                    tiendasCheckeadas.push($(this).attr("id"));
-                }
-
-            });
-
-            incluir_bodega = 0;
-
-            var data = {
-                accion: 'CARGATIENDASPORPLAZA',
-                incluir_bodega: incluir_bodega,
-                plazasTiendas: plazasTiendas,
-            };
-            // console.log("Datos enviados:", data);
-            // console.log("plazasTiendas:", plazasTiendas);
-            $.ajax({
-                type: 'post',
-                url: './cargaDatos.php',
-                data: data,
-                async: false,
-                dataType: "json",
-                success: function (ttr) {
-                    $("#contTiendadv50").html("<span  class='titulodiv50 bg-dark '>Tiendas</span>" + ttr['tiendas']);
-                    $.each(tiendasCheckeadas, function (index, val) {
-                        $("#" + val).prop("checked", true);
-
-                    });
-                    $(".div50Tienda ").last().change();
-                }, error: function (ttr) {
-                    console.log(ttr.responseText);
-                    alert('Error al enviar datos!!!\nPosibles errores:\n-El servidor no ha respondido a su solicitud (inténtelo de nuevo).\n-La sesión ha expirado(actualize la página web o teclee f5).\n-Ha cancelado la peticion al servidor.');
-
-                }
-
-            });
-        });
-
-        $("#agrupadoPor").trigger("change");
-
-        $("#buscar").on("click", function () {
-            plazasTiendas = new Array();
-            $(".contOpcion input").each(function () {
-                if ($(this).prop("checked")) {
-                    plazasTiendas.push($(this).attr("id").split("_")[1]);
-                }
-
-            });
-            var contOpcionVision = "";
-            var agrupacion = $("#agrupadoPor").val();
-            auxAgrupacion = new Array();
-            banderaauxAgrupacion = false;
-
-            switch (agrupacion) {
-                case '1'://region
-                    $(".contOpcion").find("input").each(function () {
-                        if ($(this).prop("checked")) {
-                            auxAgrupacion.push($(this).attr("id").split("_")[1]);
-                            banderaauxAgrupacion = true;
-                        }
-                    });
-                    if (!banderaauxAgrupacion) {
-                        $("#opcionVision").css("border-color", "red");
-                        alertt("Es necesario que seleccione por lo menos una opcion, en la selección de regiones");
-                        return false;
-                    }
-                    break;
-                case '2'://plaza
-                    $(".contOpcion").find("input").each(function () {
-
-                        if ($(this).prop("checked")) {
-                            auxAgrupacion.push($(this).attr("id").split("_")[1]);
-                            banderaauxAgrupacion = true;
-                        }
-                    });
-                    if (!banderaauxAgrupacion) {
-                        $("#opcionVision").css("border-color", "red");
-                        alertt("Es necesario que seleccione por lo menos una opcion, en la selección de plazas");
-                        return false;
-                    }
-                    break;
-                case '3'://tienda
-                    $("#contTiendadv50").find("input").each(function () {
-                        if ($(this).prop("checked")) {
-                            auxAgrupacion.push($(this).attr("id").split("_")[1]);
-                            banderaauxAgrupacion = true;
+                switch ($(this).val()) {
+                    case '1'://regiones
+                        contOpcionVision += "<span class='titulodiv50 bg-dark' id='contPlazadv50'>Regiones</span>";
+                        <?php
+                        $connectionInfo = array("Database" => "BDGrupoS_Buena", "UID" => $user, "PWD" => $password);
+                        $conn = sqlsrv_connect($server, $connectionInfo);
+                        if ($conn === false) {
+                            die(print_r(sqlsrv_errors(), true));
                         }
 
+                        $sql = "SELECT Code,Code + '  ' +  Name Name  FROM BDGrupoS_Buena..[@BYS_REGIONES_WHS] WHERE Code NOT IN (04,05) ORDER BY Code;";
 
-                    });
-                    if (!banderaauxAgrupacion) {
-                        $("#opcionVision").css("border-color", "red");
-                        alertt("Es necesario que seleccione por lo menos una opcion, en la selección de tiendas");
-                        return false;
+                        $stmt = sqlsrv_query($conn, $sql);
+                        if ($stmt === false) {
+                            die(print_r(sqlsrv_errors(), true));
+                        }
+                        echo "contOpcionVision+=" . '"' . "<div class='p-1'><label for='region_all' ><input class='me-1' type='checkbox' id='region_all' />Seleccionar Todo</label></div>" . '"' . ";";
+
+                        while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+                            echo "contOpcionVision+=" . '"' . "<div class='contOpcion' iden='" . $row['Code'] . "' ><label class='p-1' for='region_" . $row['Code'] . "' ><input class='me-1' type='checkbox' id='region_" . $row['Code'] . "' />" . $row['Name'] . "</label></div>" . '"' . ";";
+                        }
+
+                        ?>
+                        break;
+                    case '2'://plazas
+                        contOpcionVision += "<span class='titulodiv50 bg-dark ' id='contPlazadv50'>Plazas</span>";
+
+                        <?php
+                        $connectionInfo = array("Database" => "BDGrupoS_Buena", "UID" => $user, "PWD" => $password);
+                        $conn = sqlsrv_connect($server, $connectionInfo);
+                        if ($conn === false) {
+                            die(print_r(sqlsrv_errors(), true));
+                        }
+
+                        $sql = "SELECT Code,Location FROM BDGrupoS_Buena..OLCT WHERE Code not in (5,11,12,9,10,13,14,15,16,17,18)";
+
+                        $stmt = sqlsrv_query($conn, $sql);
+                        if ($stmt === false) {
+                            die(print_r(sqlsrv_errors(), true));
+                        }
+                        echo "contOpcionVision+=" . '"' . "<div class='p-1' ><label for='region_all' ><input class='me-1' type='checkbox' id='region_all' />Seleccionar Todo</label></div>" . '"' . ";";
+
+                        while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+                            echo "contOpcionVision+=" . '"' . "<div class='contOpcion P_" . $row['Location'] . "' id='" . $row['Code'] . "' ><label class='p-1' for='region_" . $row['Code'] . "' ><input class='me-1' type='checkbox' id='region_" . $row['Code'] . "' />" . $row['Location'] . "</label></div>" . '"' . ";";
+                        }
+
+                        ?>
+                        break;
+                    case '3'://Tiendas
+                        contOpcionVision += "<div class='div50' style='display: grid'>";
+                        contOpcionVision += "<span class='titulodiv50 bg-dark ' id='contPlazadv50'>Plazas</span>";
+                        <?php
+                        $connectionInfo = array("Database" => "BDGrupoS_Buena", "UID" => $user, "PWD" => $password);
+                        $conn = sqlsrv_connect($server, $connectionInfo);
+                        if ($conn === false) {
+                            die(print_r(sqlsrv_errors(), true));
+                        }
+
+                        $sql = "SELECT Code,Location FROM BDGrupoS_Buena..OLCT WHERE Code not in (5,11,12,9,10,13,14,15,16,17,18)";
+
+                        $stmt = sqlsrv_query($conn, $sql);
+                        if ($stmt === false) {
+                            die(print_r(sqlsrv_errors(), true));
+                        }
+                        echo "contOpcionVision+=" . '"' . "<div class='p-1'' ><label for='region_all' ><input class='me-1' type='checkbox' id='region_all' />Seleccionar Todo</label></div>" . '"' . ";";
+
+                        while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+                            echo "contOpcionVision+=" . '"' . "<div class='contOpcion div50Plaza P_" . $row['Location'] . "' id='" . $row['Code'] . "' ><label class='p-1' for='region_" . $row['Code'] . "' ><input class='me-1' type='checkbox' id='region_" . $row['Code'] . "' />" . $row['Location'] . "</label></div>" . '"' . ";";
+                        }
+
+                        ?>
+                        contOpcionVision += "</div>";
+                        contOpcionVision += "<div id='contTiendadv50' class='div50'>";
+                        contOpcionVision += "<span class='titulodiv50 bg-dark' id='contPlazadv50'>Tiendas</span>";
+                        contOpcionVision += "</div>";
+                        break;
+                }
+
+                $("#opcionVision").html(contOpcionVision);
+            });
+
+            $(document).on("change", "#region_all", function () {
+                $(".contOpcion input").prop("checked", $(this).prop("checked"));
+                $(".contOpcion ").last().change();
+            });
+
+            $(document).on("change", ".contOpcion input", function () {
+                todosSeleccionados = true;
+                $(".contOpcion input").each(function () {
+                    if (!$(this).prop("checked")) {
+                        todosSeleccionados = false;
                     }
-                    break;
-            }
-            var data = {
-                accion: 'CARGARTABLAFILTRADA',
-                agrupacion: agrupacion,
-                plazasTiendas: plazasTiendas,
-                auxAgrupacion: auxAgrupacion,
-            };
-            $('#loadingOverlay').show();
+                });
+                $("#region_all").prop("checked", todosSeleccionados);
+            });
+            $(document).on("change", "#tienda_all", function () {
 
-            $.ajax({
-                type: 'post',
-                url: './cargaDatos.php',
-                data: data,
-                dataType: "json",
-                beforeSend: function () {
-                    // Mostrar el loader antes de la solicitud AJAX
-                    $('#loadingOverlay').show();
-                },
-                success: function (response) {
-                    try {
-                        // Limpiar el cuerpo de la tabla
-                        $('#dataTable tbody').empty();
+                $(".div50Tienda input").prop("checked", $(this).prop("checked"));
+                $(".div50Tienda ").last().change();
+            });
+            $(document).on("change", ".div50Tienda input", function () {
+                todosSeleccionados = true;
+                $(".div50Tienda input").each(function () {
+                    if (!$(this).prop("checked")) {
+                        todosSeleccionados = false;
+                    }
 
-                        if (response && response.contenido && response.contenido.length > 0) {
-                            // Actualizar la tabla con los nuevos datos
-                            response.contenido.forEach(function (item) {
+                });
+                $("#tienda_all").prop("checked", todosSeleccionados);
+
+            });
+            $(document).on("change", ".div50Plaza", function () {
+                plazasTiendas = new Array();
+                tiendasCheckeadas = new Array();
+                $(".contOpcion input").each(function () {
+                    if ($(this).prop("checked")) {
+                        plazasTiendas.push($(this).attr("id").split("_")[1]);
+                    }
+
+                });
+                $("#contTiendadv50").find("input").each(function () {
+                    if ($(this).prop("checked")) {
+                        tiendasCheckeadas.push($(this).attr("id"));
+                    }
+
+                });
+
+                incluir_bodega = 0;
+
+                var data = {
+                    accion: 'CARGATIENDASPORPLAZA',
+                    incluir_bodega: incluir_bodega,
+                    plazasTiendas: plazasTiendas,
+                };
+                // console.log("Datos enviados:", data);
+                // console.log("plazasTiendas:", plazasTiendas);
+                $.ajax({
+                    type: 'post',
+                    url: './opcionesFiltrado.php',
+                    data: data,
+                    async: false,
+                    dataType: "json",
+                    success: function (ttr) {
+                        $("#contTiendadv50").html("<span  class='titulodiv50 bg-dark '>Tiendas</span>" + ttr['tiendas']);
+                        $.each(tiendasCheckeadas, function (index, val) {
+                            $("#" + val).prop("checked", true);
+
+                        });
+                        $(".div50Tienda ").last().change();
+                    }, error: function (ttr) {
+                        console.log(ttr.responseText);
+                        alert('Error al enviar datos!!!\nPosibles errores:\n-El servidor no ha respondido a su solicitud (inténtelo de nuevo).\n-La sesión ha expirado(actualize la página web o teclee f5).\n-Ha cancelado la peticion al servidor.');
+
+                    }
+
+                });
+            });
+
+            $("#agrupadoPor").trigger("change");
+
+            $("#buscar").on("click", function () {
+                plazasTiendas = new Array();
+                $(".contOpcion input").each(function () {
+                    if ($(this).prop("checked")) {
+                        plazasTiendas.push($(this).attr("id").split("_")[1]);
+                    }
+
+                });
+                var contOpcionVision = "";
+                var agrupacion = $("#agrupadoPor").val();
+                auxAgrupacion = new Array();
+                banderaauxAgrupacion = false;
+
+                $("#opcionVision").css("border-color", "#808080");
+
+                switch (agrupacion) {
+                    case '1'://region
+                        $(".contOpcion").find("input").each(function () {
+                            if ($(this).prop("checked")) {
+                                auxAgrupacion.push($(this).attr("id").split("_")[1]);
+                                banderaauxAgrupacion = true;
+                            }
+                        });
+                        if (!banderaauxAgrupacion) {
+                            $("#opcionVision").css("border-color", "red");
+                            alert("Es necesario que seleccione por lo menos una opcion, en la selección de regiones");
+                            return false;
+                        }
+                        break;
+                    case '2'://plaza
+                        $(".contOpcion").find("input").each(function () {
+
+                            if ($(this).prop("checked")) {
+                                auxAgrupacion.push($(this).attr("id").split("_")[1]);
+                                banderaauxAgrupacion = true;
+                            }
+                        });
+                        if (!banderaauxAgrupacion) {
+                            $("#opcionVision").css("border-color", "red");
+                            alert("Es necesario que seleccione por lo menos una opcion, en la selección de plazas");
+                            return false;
+                        }
+                        break;
+                    case '3'://tienda
+                        $("#contTiendadv50").find("input").each(function () {
+                            if ($(this).prop("checked")) {
+                                auxAgrupacion.push($(this).attr("id").split("_")[1]);
+                                banderaauxAgrupacion = true;
+                            }
+
+
+                        });
+                        if (!banderaauxAgrupacion) {
+                            $("#opcionVision").css("border-color", "red");
+                            alert("Es necesario que seleccione por lo menos una opcion, en la selección de tiendas");
+                            return false;
+                        }
+                        break;
+                }
+                var data = {
+                    accion: 'CARGARTABLAFILTRADA',
+                    agrupacion: agrupacion,
+                    plazasTiendas: plazasTiendas,
+                    auxAgrupacion: auxAgrupacion,
+                };
+                $('#loadingOverlay').show();
+                console.log(agrupacion);
+                $.ajax({
+                    type: 'post',
+                    url: './opcionesFiltrado.php',
+                    data: data,
+                    dataType: "json",
+                    beforeSend: function () {
+                        // Mostrar el loader antes de la solicitud AJAX
+                        $('#loadingOverlay').show();
+                    },
+                    success: function (response) {
+                        // Verificar si la respuesta es un array y tiene datos
+                        if (Array.isArray(response) && response.length > 0) {
+                            // Obtener el elemento de la tabla
+                            var table = document.getElementById("dataTable");
+                            $(table).find('tbody').empty();
+
+                            // Crear un fragmento de documento para optimizar la manipulación del DOM
+                            var fragment = document.createDocumentFragment();
+
+                            // Iterar sobre los datos y agregar filas al fragmento
+                            response.forEach(function (item) {
+                                // Verificar si la clave "Buffer" existe en el objeto actual
+                                var bufferValue = item.Buffer || 0;
                                 // Calcular la diferencia
-                                var diferencia = item.pack_constraint - (item.buffer_sql || 0);
-
-                                // Determinar la clase de estilo basada en la diferencia
-                                var cssClass = '';
+                                var diferencia = item.pack_constraint - bufferValue;
+                                // Determinar la clase de estilo basada en el valor de diferencia
+                                var classStyle = '';
                                 if (diferencia > 0) {
-                                    cssClass = "text-primary";
+                                    classStyle = 'text-primary';
                                 } else if (diferencia === 0) {
-                                    cssClass = 'text-success';
+                                    classStyle = 'text-success';
                                 } else {
-                                    cssClass = 'text-danger';
+                                    classStyle = 'text-danger';
                                 }
 
-                                // Crear una nueva fila para la tabla
-                                var newRow = '<tr>' +
-                                    '<td>' + item.locations_external_id + '</td>' +
-                                    '<td>' + item.skus_external_id + '</td>' +
-                                    '<td>' + item.sku_name + '</td>' +
-                                    '<td>' + item.pack_constraint + '</td>' +
-                                    '<td>' + (item.buffer_sql || 0) + '</td>' +
-                                    '<td class="' + cssClass + '">' + diferencia + '</td>' +
-                                    '</tr>';
+                                // Crear la fila de la tabla con datos del objeto
+                                var row = document.createElement('tr');
 
-                                // Append the new row to the table
-                                $('#dataTable tbody').html(newRow);
+                                var tdLocationsExternalId = document.createElement('td');
+                                tdLocationsExternalId.textContent = item.locations_external_id;
+                                row.appendChild(tdLocationsExternalId);
+
+                                var tdSkusExternalId = document.createElement('td');
+                                tdSkusExternalId.textContent = item.skus_external_id;
+                                row.appendChild(tdSkusExternalId);
+
+                                var tdSkuName = document.createElement('td');
+                                tdSkuName.textContent = item.sku_name;
+                                row.appendChild(tdSkuName);
+
+                                var tdPackConstraint = document.createElement('td');
+                                tdPackConstraint.textContent = item.pack_constraint;
+                                row.appendChild(tdPackConstraint);
+
+                                var tdBuffer = document.createElement('td');
+                                tdBuffer.textContent = bufferValue;
+                                row.appendChild(tdBuffer);
+
+                                var tdDiferencia = document.createElement('td');
+                                tdDiferencia.textContent = diferencia;
+                                tdDiferencia.classList.add(classStyle);
+                                row.appendChild(tdDiferencia);
+
+                                // Agregar la fila al fragmento
+                                fragment.appendChild(row);
                             });
+
+                            // Destruir la instancia actual de DataTable si existe
+                            if (dataTableInstance) {
+                                dataTableInstance.destroy();
+                            }
+
+                            // Agregar todas las filas al cuerpo de la tabla de una vez
+                            $('#dataTable tbody').append(fragment);
+
+                            // Volver a inicializar DataTable con los nuevos datos
+                            dataTableInstance = new DataTable('#dataTable', {
+                                language: {
+                                    search: 'Buscar: ',
+                                    url: 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-MX.json'
+                                },
+                                "columns": [
+                                    { "width": "5%" },
+                                    { "width": "15%" },
+                                    { "width": "62%" },
+                                    { "width": "8%" },
+                                    { "width": "5%" },
+                                    { "width": "5%" },
+                                ]
+                            });
+
+                            $('#opcionesModal').modal('hide');
+
+                            console.log('Datos cargados correctamente.');
                         } else {
-                            // Mostrar un mensaje si no hay resultados
-                            $('#noResultsRow').show();
+                            console.log('La respuesta no es un array o no tiene datos.');
                         }
-                    } catch (error) {
-                        console.error('Error al procesar la respuesta AJAX:', error);
-                    } finally {
-                        // Ocultar el loader después de completar la solicitud AJAX
+                        // Ocultar el loader después de cargar los datos
+                        $('#loadingOverlay').hide();
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error en la solicitud AJAX:', xhr.responseText);
+
+                        // Ocultar el loader en caso de error
                         $('#loadingOverlay').hide();
                     }
-                },
-                error: function (xhr, status, error) {
-                    console.error('Error en la solicitud AJAX:', xhr.responseText);
-
-                    // Ocultar el loader en caso de error
-                    $('#loadingOverlay').hide();
-                }
+                });
             });
-
         });
+        $('#dataTable').show();
+        $('#loadingOverlay').hide();
     });
 
 </script>
