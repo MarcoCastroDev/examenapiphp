@@ -52,7 +52,7 @@ function exportExcel() {
       fgColor: { argb: "019a32" },
     },
     font: {
-      name: "Century Gothic",
+      name: "Trebuchet MS",
       size: 12,
       bold: true,
       color: { argb: "FFFFFF" },
@@ -66,7 +66,7 @@ function exportExcel() {
   // Configurar estilos adicionales
   var styleArray = {
     font: {
-      name: "Century Gothic",
+      name: "Trebuchet MS",
       size: 12,
     },
     alignment: {

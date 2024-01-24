@@ -210,3 +210,9 @@ body {
         transform: scale(1.0);
     }
 }
+
+#buttons {
+    width: 138%;
+    margin-left: -13.5rem !important;
+    margin: 1.5rem 0 0 0;
+}

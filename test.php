@@ -1,5 +1,5 @@
 <?php
-require('cargaDatos.php');
+// require('cargaDatos.php');
 require('opcionesFiltrado.php');
 ?>
 
@@ -22,6 +22,7 @@ require('opcionesFiltrado.php');
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@10.16.6/dist/sweetalert2.min.css">
 </head>
 
+<!-- Spinner de carga -->
 <div id="loadingOverlay" class="overlay" style="display: inline;">
     <div class="spinner">
         <div class="bounce1"></div>
@@ -37,13 +38,17 @@ require('opcionesFiltrado.php');
             alt="" class="navbar-brand m-2">
     </nav>
     <div class="container-fluid">
-        <h1 class="title ms-5 mt-4"><i class="fas fa-clipboard-check p-3" style="color: #00a321;"></i><strong>Reporte de OneBeat vs Buffer</strong></h1>
-        <div class="container" style="margin-right: 2rem!important;">
-            <div class="d-flex justify-content-end align-items-center">
-                <!-- Botones de Exportar -->
-                <div class="me-5">
+        <h1 class="title ms-4 mt-4"><i class="fas fa-clipboard-check p-3" style="color: #00a321;"></i><strong>Reporte de
+                OneBeat vs Buffer</strong></h1>
+        <div class="container w-100 ">
+            <div class="d-flex justify-content-between align-items-center" id="buttons">
+                <div class="d-flex align-items-center">
+                    <button type="button" class="btn btn-secondary align-content-start">Aplicar Buffer</button>
+                </div>
+                <!-- Botones de Exportar y Filtrar -->
+                <div class="d-flex me-5">
                     <div class="dropdown">
-                        <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown"
+                        <button class="btn btn-primary dropdown-toggle me-4" type="button" data-bs-toggle="dropdown"
                             aria-expanded="false">
                             <i class="fas fa-file-export"></i> Exportar
                         </button>
@@ -59,11 +64,11 @@ require('opcionesFiltrado.php');
                             </form>
                         </ul>
                     </div>
+                    <button type="button" class="btn btn-secondary" data-bs-toggle="modal"
+                        data-bs-target="#opcionesModal">
+                        <i class="fa-solid fa-filter me-1"></i>Filtrar Resultados
+                    </button>
                 </div>
-                <!-- Botón para abrir el modal -->
-                <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#opcionesModal">
-                    <i class="fa-solid fa-filter me-1"></i>Filtrar Resultados
-                </button>
                 <!-- Modal -->
                 <div class="modal fade" id="opcionesModal" tabindex="-1" aria-labelledby="opcionesModalLabel"
                     aria-hidden="true">
@@ -87,7 +92,7 @@ require('opcionesFiltrado.php');
                                         <i class="fa-solid fa-magnifying-glass me-1"></i>Buscar
                                     </button>
                                 </div>
-                                <div id="opcionVision" class="m-4" style="width: 92vh;"></div>
+                                <div id="opcionVision" class="w-auto m-4"></div>
                             </div>
                             <div class="modal-footer">
                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
@@ -108,7 +113,7 @@ require('opcionesFiltrado.php');
                 <th class="text-center">Diferencia</th>
             </thead>
             <tbody>
-                <?php
+                <!-- <?php
                 foreach ($combinedData as $item) {
                     // Verificar si la clave "buffer_sql" existe en el array actual
                     $bufferValue = isset($item['Buffer']) ? $item['Buffer'] : 0;
@@ -147,7 +152,7 @@ require('opcionesFiltrado.php');
 
                     <?php
                 }
-                ?>
+                ?> -->
             </tbody>
             <tfoot>
                 <tr>
@@ -216,6 +221,9 @@ require('opcionesFiltrado.php');
                 var contOpcionVision = "";
 
                 switch ($(this).val()) {
+                    case '1':
+                        contOpcionVision += "<div class='p-1 d-flex justify-content-center align-items-center mt-5'><label><strong>Se buscará en todos los registros</strong></label></div>";
+                        break;
                     case '2'://regiones
                         contOpcionVision += "<span class='titulodiv50 bg-dark' id='contPlazadv50'>Regiones</span>";
                         <?php
