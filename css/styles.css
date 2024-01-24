@@ -10,7 +10,7 @@ body {
 
 .dataTables_wrapper {
     width: 95%;
-    margin-left: 4rem !important;
+    margin-left: 3rem !important;
     margin: 2rem;
     table-layout: fixed;
 }
@@ -147,4 +147,8 @@ body {
     width: 70em;
     margin-right: auto;
     margin-left: auto;
+}
+
+#tienda_all text {
+    margin-left: 0.25rem;
 }

@@ -35,14 +35,18 @@ switch ($accion) {
             }
             $conjuntosChecks = "<div class='p-1'><label for='tienda_all' ><input class='me-1' type='checkbox' id='tienda_all' />Seleccionar Todo</label></div>";
             while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-                $conjuntosChecks .= "<div class='p-1 contOpcionPlaza div50Tienda " . $row['tipo'] . "' identifi='" . $row['Code'] . "' ><label class='p-1' for='tienda_" . $row['Code'] . "' ><input type='checkbox' id='tienda_" . $row['Code'] . "' />" . $row['name'] . "</label></div>";
+                $conjuntosChecks .= "<div class='contOpcionPlaza div50Tienda " . $row['tipo'] . "' idtienda='" . $row['Code'] . "' ><label class='p-1' for='tienda_" . $row['Code'] . "' ><input class='me-1' type='checkbox' id='tienda_" . $row['Code'] . "' />" . $row['name'] . "</label></div>";
             }
         }
         echo json_encode(array('tiendas' => $conjuntosChecks));
         break;
 
     case 'CARGARTABLAFILTRADA':
+        // Inicializar un array para almacenar los datos combinados
+        $combinedData = [];
         try {
+            $agrupacion = isset($_POST['agrupacion']) ? $_POST['agrupacion'] : null;
+            $auxAgrupacion = isset($_POST['auxAgrupacion']) ? $_POST['auxAgrupacion'] : null;
             $plazasTiendas = isset($_POST['plazasTiendas']) ? $_POST['plazasTiendas'] : null;
             require('dbconnection.php');
             require('getapi.php');
@@ -57,6 +61,7 @@ switch ($accion) {
             $database = 'Siti';
 
             $plazasTiendas = join(",", $_POST['plazasTiendas']);
+            $auxAgrupacion = join(",", $_POST['auxAgrupacion']);
             // Obtener conexión a la base de datos
             $conn = getDatabaseConnection($server, $user, $password, $database);
 
@@ -101,31 +106,32 @@ switch ($accion) {
             }
 
             // Consulta para combinar datos del buffer y la tabla temporal de la API
-            $sqlCombinedData = "SELECT B.*, T.*
-                                FROM $tempName T
-                                LEFT JOIN (
-                                    SELECT ItemCode, Whscode, Buffer
-                                    FROM (
-                                        SELECT LEFT(ItemCode,20) ITEMCODE, LEFT(WhsCode,8) WhsCode, Buffer, Empresa,
-                                            ROW_NUMBER() OVER (PARTITION BY ItemCode, WhsCode, Empresa ORDER BY ItemCode, WhsCode, Fecha DESC, Hora DESC) Num
-                                        FROM SITI..BYS_Buffer WITH (NOLOCK)
-                                        WHERE Fecha <= GETDATE() AND Empresa = 'BDGRUPOS_BUENA' AND whscode IN (
-                                            SELECT location
-                                            FROM onebeat_stock_locations
-                                            WHERE Location IN (
-                                                SELECT WhsCode
-                                                FROM BDGrupoS_Buena..OWHS 
-                                                WHERE U_U_BYS_MAXIMIZADOR IN (2,4) 
-                                                    AND Location IN (" . $plazasTiendas . ")
-                                            )
-                                        )
-                                    ) AS Z
-                                    WHERE Z.NUM = 1
-                                    AND Z.WhsCode IS NOT NULL
-                                ) B
-                                ON B.Whscode COLLATE SQL_Latin1_General_CP1_CI_AS = T.locations_external_id COLLATE SQL_Latin1_General_CP1_CI_AS
-                                    AND B.ItemCode COLLATE SQL_Latin1_General_CP1_CI_AS = T.skus_external_id COLLATE SQL_Latin1_General_CP1_CI_AS
-                                WHERE B.WhsCode IS NOT NULL;";
+            $sqlCombinedData = "declare @Vision INT = " . $agrupacion . ", --1 Global, 2 Region, 3 Plaza, 4 Tienda.
+	                                    @AuxVision VARCHAR(MAX) = '" . $auxAgrupacion . "' --Dependiendo la vision seria el concatenado de lo que quiere ver, ya sea region, plaza o tienda. 
+                                SELECT B.*, T.*
+                                        FROM $tempName T
+                                        inner JOIN (
+                                            SELECT ItemCode, Whscode, Buffer
+                                            FROM (
+                                                SELECT LEFT(T0.ItemCode,20) ITEMCODE, LEFT(T1.WhsCode,8) WhsCode, T0.Buffer,
+                                                    ROW_NUMBER() OVER (PARTITION BY T0.ItemCode, T1.WhsCode ORDER BY T0.ItemCode, T1.WhsCode, T0.Fecha DESC, T0.Hora DESC) Num
+                                                FROM SITI..BYS_Buffer T0 WITH (NOLOCK)
+                                                inner join BDGRUPOS_BUENA..OWHS T1 ON T1.WhsCode = T0.WhsCode 
+                                                WHERE T0.Fecha <= GETDATE() AND T0.Empresa = 'BDGRUPOS_BUENA'
+                                                AND (
+                                                    (@Vision = 1) --DE GRUPO, SE CONSULTA TODO; 59
+                                                    OR
+                                                    (@Vision = 2 AND T1.U_Bys_RegionWhs IN (SELECT Item FROM Siti..Split(@AuxVision,','))) --REGION, SOLO LAS REGIONES INTERESADAS
+                                                    OR
+                                                    (@Vision = 3 AND T1.Location IN (SELECT Item FROM Siti..Split(@AuxVision,','))) --PLAZA, SOLO LAS PLAZAS SELECCIONADAS
+                                                    OR
+                                                    (@Vision = 4 AND T1.WhsCode IN (SELECT Item FROM Siti..Split(@AuxVision,','))) --TIENDA, SOLO LAS TIENDAS SELECCIONADAS
+                                                )
+                                            ) AS Z
+                                            WHERE Z.NUM = 1
+                                            ) B
+                                            ON B.Whscode COLLATE SQL_Latin1_General_CP1_CI_AS = T.locations_external_id COLLATE SQL_Latin1_General_CP1_CI_AS
+                                            AND B.ItemCode COLLATE SQL_Latin1_General_CP1_CI_AS = T.skus_external_id COLLATE SQL_Latin1_General_CP1_CI_AS";
 
             // print_r($sqlCombinedData);
 
@@ -135,9 +141,6 @@ switch ($accion) {
             if (!$combinedResult) {
                 throw new Exception("Error en la consulta SQL combinada: " . print_r($conn->errorInfo(), true));
             }
-
-            // Inicializar un array para almacenar los datos combinados
-            $combinedData = [];
 
             while ($row = $combinedResult->fetch(PDO::FETCH_ASSOC)) {
                 $combinedData[] = $row;

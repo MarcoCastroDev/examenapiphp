@@ -52,7 +52,7 @@ require('opcionesFiltrado.php');
             vs
             Buffer
         </h1>
-        <div class="container me-3">
+        <div class="container" style="margin-right: 2rem!important;">
             <div class="d-flex justify-content-end align-items-center">
                 <!-- Botones de Exportar -->
                 <div class="me-5">
@@ -76,7 +76,7 @@ require('opcionesFiltrado.php');
                 </div>
                 <!-- Botón para abrir el modal -->
                 <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#opcionesModal">
-                    <i class="fa-solid fa-filter me-2"></i>Filtrar Resultados
+                    <i class="fa-solid fa-filter me-1"></i>Filtrar Resultados
                 </button>
                 <!-- Modal -->
                 <div class="modal fade" id="opcionesModal" tabindex="-1" aria-labelledby="opcionesModalLabel"
@@ -92,9 +92,10 @@ require('opcionesFiltrado.php');
                                 <label for="agrupadoPor" class="form-label ms-4 mt-2">Agrupador:</label>
                                 <div class="input-group w-50 ms-4" id="agrupadorContent">
                                     <select class="form-select" id="agrupadoPor">
-                                        <option value="1">Región</option>
-                                        <option value="2">Plaza</option>
-                                        <option value="3">Tienda</option>
+                                        <option value="1" style="display: none;">Global</option>
+                                        <option value="2" selected>Región</option>
+                                        <option value="3">Plaza</option>
+                                        <option value="4">Tienda</option>
                                     </select>
                                     <button type="button" class="btn btn-primary" id="buscar">
                                         <i class="fa-solid fa-magnifying-glass me-1"></i>Buscar
@@ -207,7 +208,10 @@ require('opcionesFiltrado.php');
                 var contOpcionVision = "";
 
                 switch ($(this).val()) {
-                    case '1'://regiones
+                    case '1'://global
+
+                    break;
+                    case '2'://regiones
                         contOpcionVision += "<span class='titulodiv50 bg-dark' id='contPlazadv50'>Regiones</span>";
                         <?php
                         $connectionInfo = array("Database" => "BDGrupoS_Buena", "UID" => $user, "PWD" => $password);
@@ -225,7 +229,7 @@ require('opcionesFiltrado.php');
                         echo "contOpcionVision+=" . '"' . "<div class='p-1'><label for='region_all' ><input class='me-1' type='checkbox' id='region_all' />Seleccionar Todo</label></div>" . '"' . ";";
 
                         while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-                            echo "contOpcionVision+=" . '"' . "<div class='contOpcion' iden='" . $row['Code'] . "' ><label class='p-1' for='region_" . $row['Code'] . "' ><input class='me-1' type='checkbox' id='region_" . $row['Code'] . "' />" . $row['Name'] . "</label></div>" . '"' . ";";
+                            echo "contOpcionVision+=" . '"' . "<div class='contOpcion' idregion='" . $row['Code'] . "' ><label class='p-1 me-2' for='region_" . $row['Code'] . "' ><input class='me-1' type='checkbox' id='region_" . $row['Code'] . "' />" . $row['Name'] . "</label></div>" . '"' . ";";
                         }
 
                         ?>
@@ -249,12 +253,12 @@ require('opcionesFiltrado.php');
                         echo "contOpcionVision+=" . '"' . "<div class='p-1' ><label for='region_all' ><input class='me-1' type='checkbox' id='region_all' />Seleccionar Todo</label></div>" . '"' . ";";
 
                         while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-                            echo "contOpcionVision+=" . '"' . "<div class='contOpcion P_" . $row['Location'] . "' id='" . $row['Code'] . "' ><label class='p-1' for='region_" . $row['Code'] . "' ><input class='me-1' type='checkbox' id='region_" . $row['Code'] . "' />" . $row['Location'] . "</label></div>" . '"' . ";";
+                            echo "contOpcionVision+=" . '"' . "<div class='contOpcion P_" . $row['Location'] . "' idplaza='" . $row['Code'] . "' ><label class='p-1 me-2' for='region_" . $row['Code'] . "' ><input class='me-1' type='checkbox' id='region_" . $row['Code'] . "' />" . $row['Location'] . "</label></div>" . '"' . ";";
                         }
 
                         ?>
                         break;
-                    case '3'://Tiendas
+                    case '4'://Tiendas
                         contOpcionVision += "<div class='div50' style='display: grid'>";
                         contOpcionVision += "<span class='titulodiv50 bg-dark ' id='contPlazadv50'>Plazas</span>";
                         <?php
@@ -273,7 +277,7 @@ require('opcionesFiltrado.php');
                         echo "contOpcionVision+=" . '"' . "<div class='p-1'' ><label for='region_all' ><input class='me-1' type='checkbox' id='region_all' />Seleccionar Todo</label></div>" . '"' . ";";
 
                         while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-                            echo "contOpcionVision+=" . '"' . "<div class='contOpcion div50Plaza P_" . $row['Location'] . "' id='" . $row['Code'] . "' ><label class='p-1' for='region_" . $row['Code'] . "' ><input class='me-1' type='checkbox' id='region_" . $row['Code'] . "' />" . $row['Location'] . "</label></div>" . '"' . ";";
+                            echo "contOpcionVision+=" . '"' . "<div class='contOpcion div50Plaza P_" . $row['Location'] . "' id='" . $row['Code'] . "' ><label class='p-1 me-2' for='region_" . $row['Code'] . "' ><input class='me-1' type='checkbox' id='region_" . $row['Code'] . "' />" . $row['Location'] . "</label></div>" . '"' . ";";
                         }
 
                         ?>
@@ -317,6 +321,7 @@ require('opcionesFiltrado.php');
                 $("#tienda_all").prop("checked", todosSeleccionados);
 
             });
+
             $(document).on("change", ".div50Plaza", function () {
                 plazasTiendas = new Array();
                 tiendasCheckeadas = new Array();
@@ -374,6 +379,7 @@ require('opcionesFiltrado.php');
                     }
 
                 });
+
                 var contOpcionVision = "";
                 var agrupacion = $("#agrupadoPor").val();
                 auxAgrupacion = new Array();
@@ -385,7 +391,10 @@ require('opcionesFiltrado.php');
                     case '1'://region
                         $(".contOpcion").find("input").each(function () {
                             if ($(this).prop("checked")) {
-                                auxAgrupacion.push($(this).attr("id").split("_")[1]);
+                                var idRegion = $(this).attr("id");
+                                if (idRegion) {
+                                    auxAgrupacion.push(idRegion.split("_")[1]);
+                                }
                                 banderaauxAgrupacion = true;
                             }
                         });
@@ -399,7 +408,10 @@ require('opcionesFiltrado.php');
                         $(".contOpcion").find("input").each(function () {
 
                             if ($(this).prop("checked")) {
-                                auxAgrupacion.push($(this).attr("id").split("_")[1]);
+                                var idPlaza = $(this).attr("id");
+                                if (idPlaza) {
+                                    auxAgrupacion.push(idPlaza.split("_")[1]);
+                                }
                                 banderaauxAgrupacion = true;
                             }
                         });
@@ -412,7 +424,10 @@ require('opcionesFiltrado.php');
                     case '3'://tienda
                         $("#contTiendadv50").find("input").each(function () {
                             if ($(this).prop("checked")) {
-                                auxAgrupacion.push($(this).attr("id").split("_")[1]);
+                                var idTienda = $(this).attr("id");
+                                if (idTienda) {
+                                    auxAgrupacion.push(idTienda.split("_")[1]);
+                                }
                                 banderaauxAgrupacion = true;
                             }
 
@@ -425,14 +440,17 @@ require('opcionesFiltrado.php');
                         }
                         break;
                 }
+
                 var data = {
                     accion: 'CARGARTABLAFILTRADA',
                     agrupacion: agrupacion,
+                    auxAgrupacion: auxAgrupacion,
                     plazasTiendas: plazasTiendas,
                     auxAgrupacion: auxAgrupacion,
                 };
                 $('#loadingOverlay').show();
                 console.log(agrupacion);
+                console.log(auxAgrupacion);
                 $.ajax({
                     type: 'post',
                     url: './opcionesFiltrado.php',
@@ -443,6 +461,14 @@ require('opcionesFiltrado.php');
                         $('#loadingOverlay').show();
                     },
                     success: function (response) {
+                        console.log('Número de filas en la respuesta:', response.length);
+
+                        // Limpiar la tabla y destruir la instancia DataTable
+                        $('#dataTable tbody').empty();
+                        if (dataTableInstance) {
+                            dataTableInstance.destroy();
+                        }
+
                         // Verificar si la respuesta es un array y tiene datos
                         if (Array.isArray(response) && response.length > 0) {
                             // Obtener el elemento de la tabla
@@ -500,11 +526,6 @@ require('opcionesFiltrado.php');
                                 fragment.appendChild(row);
                             });
 
-                            // Destruir la instancia actual de DataTable si existe
-                            if (dataTableInstance) {
-                                dataTableInstance.destroy();
-                            }
-
                             // Agregar todas las filas al cuerpo de la tabla de una vez
                             $('#dataTable tbody').append(fragment);
 
@@ -528,7 +549,24 @@ require('opcionesFiltrado.php');
 
                             console.log('Datos cargados correctamente.');
                         } else {
-                            console.log('La respuesta no es un array o no tiene datos.');
+                            // Volver a inicializar DataTable
+                            dataTableInstance = new DataTable('#dataTable', {
+                                language: {
+                                    search: 'Buscar: ',
+                                    url: 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-MX.json'
+                                },
+                                "columns": [
+                                    { "width": "5%" },
+                                    { "width": "15%" },
+                                    { "width": "62%" },
+                                    { "width": "8%" },
+                                    { "width": "5%" },
+                                    { "width": "5%" },
+                                ]
+                            });
+
+                            $('#opcionesModal').modal('hide');
+                            alert('La respuesta no es un array o no tiene datos.');
                         }
                         // Ocultar el loader después de cargar los datos
                         $('#loadingOverlay').hide();
