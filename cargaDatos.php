@@ -16,8 +16,7 @@ try {
 	$conn = getDatabaseConnection($server, $user, $password, $database);
 
 	$tempName = '##apiTemp';
-	$dropTemp = "IF OBJECT_ID('tempdb..$tempName', 'U') IS NOT NULL
-             DROP TABLE $tempName";
+	$dropTemp = "IF OBJECT_ID('tempdb..$tempName', 'U') IS NOT NULL DROP TABLE $tempName";
 
 	$conn->exec($dropTemp);
 
@@ -37,7 +36,7 @@ try {
 
 	if (!empty($data['data'])) {
 		$insertTemp = "INSERT INTO $tempName (locations_external_id, skus_external_id, sku_chart_url, sku_name, current_target, old_target, pack_constraint)
-                          VALUES (:locations_external_id, :skus_external_id, :sku_chart_url, :sku_name, :current_target, :old_target, :pack_constraint)";
+                        VALUES (:locations_external_id, :skus_external_id, :sku_chart_url, :sku_name, :current_target, :old_target, :pack_constraint)";
 
 		$stmt = $conn->prepare($insertTemp);
 
@@ -88,10 +87,10 @@ try {
 
 	$conn = null;
 
-
 } catch (Exception $e) {
 	echo "Error: " . $e->getMessage();
 	error_log($e->getMessage(), 3, "error_log.txt");
 	exit;
 }
+
 ?>

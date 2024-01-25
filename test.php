@@ -44,7 +44,8 @@ require('opcionesFiltrado.php');
         <div class="container w-100 ">
             <div class="d-flex justify-content-between align-items-center" id="buttons">
                 <div class="d-flex align-items-center">
-                    <button type="button" class="btn btn-secondary align-content-start">Aplicar Buffer</button>
+                    <button type="button" class="btn btn-secondary align-content-start" id="buffer">Aplicar
+                        Buffer</button>
                 </div>
                 <!-- Botones de Exportar y Filtrar -->
                 <div class="d-flex me-5">
@@ -85,7 +86,7 @@ require('opcionesFiltrado.php');
                                 <div class="input-group w-50 ms-4" id="agrupadorContent">
                                     <select class="form-select" id="agrupadoPor">
                                         <option value="1">Global</option>
-                                        <option value="2" selected>Región</option>
+                                        <option value="2">Región</option>
                                         <option value="3">Plaza</option>
                                         <option value="4">Tienda</option>
                                     </select>
@@ -109,7 +110,7 @@ require('opcionesFiltrado.php');
                 <th class="text-center">Warehouse</th>
                 <th class="text-center">SKU</th>
                 <th class="text-center">SKU name</th>
-                <th class="text-center">Pack Constraint</th>
+                <th class="text-center">Current Target</th>
                 <th class="text-center">Buffer</th>
                 <th class="text-center">Diferencia</th>
             </thead>
@@ -119,7 +120,7 @@ require('opcionesFiltrado.php');
                     // Verificar si la clave "buffer_sql" existe en el array actual
                     $bufferValue = isset($item['Buffer']) ? $item['Buffer'] : 0;
                     // Calcular la diferencia
-                    $diferencia = $item['pack_constraint'] - $item['Buffer'];
+                    $diferencia = $item['current_target'] - $item['Buffer'];
                     // Determinar la clase de estilo basada en el valor de diferencia
                     $class = '';
                     if ($diferencia > 0) {
@@ -141,7 +142,7 @@ require('opcionesFiltrado.php');
                             <?= $item['sku_name'] ?>
                         </td>
                         <td class="text-center">
-                            <?= $item['pack_constraint'] ?>
+                            <?= $item['current_target'] ?>
                         </td>
                         <td class="text-center">
                             <?= $item['Buffer'] ?>
@@ -160,7 +161,7 @@ require('opcionesFiltrado.php');
                     <th class="text-center">Warehouse</th>
                     <th class="text-center">SKU</th>
                     <th class="text-center">SKU name</th>
-                    <th class="text-center">Pack Constraint</th>
+                    <th class="text-center">Current Target</th>
                     <th class="text-center">Buffer</th>
                     <th class="text-center">Diferencia</th>
                 </tr>
@@ -200,6 +201,7 @@ require('opcionesFiltrado.php');
         const searchInput = document.getElementById('searchInput');
         const dataTable = document.getElementById('dataTable');
         const buscar = document.getElementById('buscar');
+        const buffer = document.getElementById('buffer');
 
         var dataTableInstance = new DataTable('#dataTable', {
             language: {
@@ -403,6 +405,10 @@ require('opcionesFiltrado.php');
             $("#agrupadoPor").trigger("change");
 
             $("#buscar").on("click", function () {
+                cargarTablaFiltrada()
+            });
+
+            function cargarTablaFiltrada() {
                 plazasTiendas = new Array();
                 $(".contOpcion input").each(function () {
                     if ($(this).prop("checked")) {
@@ -429,14 +435,10 @@ require('opcionesFiltrado.php');
                         $(".contOpcion").find("input").each(function () {
                             if ($(this).prop("checked")) {
                                 var idRegion = $(this).attr("id");
-                                console.log(idRegion);
                                 if (idRegion) {
                                     auxAgrupacion.push(idRegion.split("_")[1]);
-                                    console.log(auxAgrupacion);
-                                    console.log(agrupacion);
                                 }
                                 banderaauxAgrupacion = true;
-                                console.log(banderaauxAgrupacion);
                             }
                         });
                         if (!banderaauxAgrupacion) {
@@ -466,14 +468,10 @@ require('opcionesFiltrado.php');
                         $(".contOpcion").find("input").each(function () {
                             if ($(this).prop("checked")) {
                                 var idPlaza = $(this).attr("id");
-                                console.log(idPlaza);
                                 if (idPlaza) {
                                     auxAgrupacion.push(idPlaza.split("_")[1]);
-                                    console.log(agrupacion);
-                                    console.log(auxAgrupacion);
                                 }
                                 banderaauxAgrupacion = true;
-                                console.log(banderaauxAgrupacion);
                             }
                         });
                         if (!banderaauxAgrupacion) {
@@ -503,14 +501,10 @@ require('opcionesFiltrado.php');
                         $("#contTiendadv50").find("input").each(function () {
                             if ($(this).prop("checked")) {
                                 var idTienda = $(this).attr("id");
-                                console.log(idTienda);
                                 if (idTienda) {
                                     auxAgrupacion.push(idTienda.split("_")[1]);
-                                    console.log(agrupacion);
-                                    console.log(auxAgrupacion);
                                 }
                                 banderaauxAgrupacion = true;
-                                console.log(banderaauxAgrupacion);
                             }
 
 
@@ -548,8 +542,6 @@ require('opcionesFiltrado.php');
                     auxAgrupacion: auxAgrupacion,
                 };
                 $('#loadingOverlay').show();
-                // console.log(agrupacion);
-                // console.log(auxAgrupacion);
                 $.ajax({
                     type: 'post',
                     url: './opcionesFiltrado.php',
@@ -560,7 +552,6 @@ require('opcionesFiltrado.php');
                         $('#loadingOverlay').show();
                     },
                     success: function (response) {
-                        // console.log('Número de filas en la respuesta:', response.length);
 
                         // Limpiar la tabla y destruir la instancia DataTable
                         $('#dataTable tbody').empty();
@@ -582,7 +573,7 @@ require('opcionesFiltrado.php');
                                 // Verificar si la clave "Buffer" existe en el objeto actual
                                 var bufferValue = item.Buffer || 0;
                                 // Calcular la diferencia
-                                var diferencia = item.pack_constraint - bufferValue;
+                                var diferencia = item.current_target - bufferValue;
                                 // Determinar la clase de estilo basada en el valor de diferencia
                                 var classStyle = '';
                                 if (diferencia > 0) {
@@ -611,10 +602,10 @@ require('opcionesFiltrado.php');
                                 tdSkuName.textContent = item.sku_name;
                                 row.appendChild(tdSkuName);
 
-                                var tdPackConstraint = document.createElement('td');
-                                tdPackConstraint.textContent = item.pack_constraint;
-                                tdPackConstraint.classList.add(textCenter);
-                                row.appendChild(tdPackConstraint);
+                                var tdCurrentTarget = document.createElement('td');
+                                tdCurrentTarget.textContent = item.current_target;
+                                tdCurrentTarget.classList.add(textCenter);
+                                row.appendChild(tdCurrentTarget);
 
                                 var tdBuffer = document.createElement('td');
                                 tdBuffer.textContent = bufferValue;
@@ -625,7 +616,6 @@ require('opcionesFiltrado.php');
                                 tdDiferencia.textContent = diferencia;
                                 tdDiferencia.classList.add(classStyle);
                                 tdDiferencia.classList.add(textCenter);
-                                console.log(tdDiferencia);
                                 row.appendChild(tdDiferencia);
 
                                 // Agregar la fila al fragmento
@@ -650,6 +640,18 @@ require('opcionesFiltrado.php');
                                     { "width": "5%" },
                                 ]
                             });
+
+                            // // Agregar un evento que se dispare después de cada dibujo de la tabla
+                            // dataTableInstance.on('draw.dt', function () {
+                            //     // Verificar si se debe ejecutar el callback
+                            //     if (!bufferAplicado && callback && typeof callback === 'function') {
+                            //         // Llamar al callback solo si no se aplicó el buffer y se proporcionó y es una función
+                            //         callback();
+                            //     }
+                            //     // Restablecer la variable después de ejecutar el callback
+                            //     bufferAplicado = false;
+                            // });
+
 
                             $('#opcionesModal').modal('hide');
                         } else {
@@ -718,10 +720,113 @@ require('opcionesFiltrado.php');
                         $('#loadingOverlay').hide();
                     }
                 });
+            }
+
+            $("#buffer").on("click", function () {
+                // Mostrar una alerta de confirmación
+                Swal.fire({
+                    title: '¿Estás seguro?',
+                    text: 'Esto aplicará el buffer. ¿Quieres continuar?',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Aceptar',
+                    cancelButtonText: 'Cancelar',
+                    customClass: {
+                        container: 'sweetalert-container',
+                        popup: 'sweetalert-popup',
+                        header: 'sweetalert-header',
+                        title: 'sweetalert-title',
+                        closeButton: 'sweetalert-close-button',
+                        icon: 'sweetalert-icon',
+                        text: 'sweetalert-text',
+                        footer: 'sweetalert-footer',
+                        confirmButton: 'sweetalert-confirm-button',
+                        cancelButton: 'sweetalert-cancel-button',
+                    }
+                }).then((result) => {
+                    // Si el usuario hace clic en "Aceptar"
+                    if (result.isConfirmed) {
+                        var agrupacion = $("#agrupadoPor").val();
+
+                        var dataTableData = dataTableInstance.rows().data().toArray();
+                        if (dataTableData.length === 0) {
+                            Swal.fire({
+                                icon: 'info',
+                                title: 'No hay datos para aplicar buffer',
+                                text: 'Por favor, verifica tus filtros y asegúrate de que haya datos visibles en la tabla.',
+                            });
+                            return;
+                        }
+                        var data = {
+                            accion: 'APLICARBUFFER',
+                            agrupacion: agrupacion,
+                            dataTableData: JSON.stringify(dataTableData),
+                        };
+
+                        $('#loadingOverlay').show();
+                        $.ajax({
+                            type: 'post',
+                            url: './opcionesFiltrado.php',
+                            data: data,
+                            dataType: "json",
+                            beforeSend: function () {
+                                // Mostrar el loader antes de la solicitud AJAX
+                                $('#loadingOverlay').show();
+                            },
+                            success: function (response) {
+                                // Lógica para manejar la respuesta exitosa del buffer
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Aplicar buffer',
+                                    html: response,
+                                    confirmButtonText: 'Aceptar',
+                                    customClass: {
+                                        container: 'sweetalert-container',
+                                        popup: 'sweetalert-popup',
+                                        header: 'sweetalert-header',
+                                        title: 'sweetalert-title',
+                                        closeButton: 'sweetalert-close-button',
+                                        icon: 'sweetalert-icon',
+                                        text: 'sweetalert-text',
+                                        footer: 'sweetalert-footer',
+                                        confirmButton: 'sweetalert-confirm-button',
+                                        cancelButton: 'sweetalert-cancel-button',
+                                    }
+                                });
+
+                                // Ocultar el loader después de aplicar el buffer
+                                $('#loadingOverlay').hide();
+                            },
+                            error: function (xhr, status, error) {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error en la solicitud AJAX',
+                                    html: xhr.responseText.replace(/<br \/>/g, ''),
+                                    confirmButtonText: 'Aceptar',
+                                    customClass: {
+                                        container: 'sweetalert-container',
+                                        popup: 'sweetalert-popup',
+                                        header: 'sweetalert-header',
+                                        title: 'sweetalert-title',
+                                        closeButton: 'sweetalert-close-button',
+                                        icon: 'sweetalert-icon',
+                                        text: 'sweetalert-text',
+                                        footer: 'sweetalert-footer',
+                                        confirmButton: 'sweetalert-confirm-button',
+                                        cancelButton: 'sweetalert-cancel-button',
+                                    }
+                                });
+                                $('#loadingOverlay').hide();
+                            }
+                        });
+                    }
+                });
             });
+            $('#dataTable').show();
+            $('#loadingOverlay').hide();
         });
-        $('#dataTable').show();
-        $('#loadingOverlay').hide();
     });
 
 </script>

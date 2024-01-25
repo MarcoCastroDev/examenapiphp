@@ -85,9 +85,11 @@ switch ($accion) {
             // Obtener datos de la API
             $data = fetchDataFromAPI($token, $endpoint);
 
+            // print_r($data);
+
             if (!empty($data['data'])) {
                 $insertTemp = "INSERT INTO $tempName (locations_external_id, skus_external_id, sku_chart_url, sku_name, current_target, old_target, pack_constraint)
-                          VALUES (:locations_external_id, :skus_external_id, :sku_chart_url, :sku_name, :current_target, :old_target, :pack_constraint)";
+                                VALUES (:locations_external_id, :skus_external_id, :sku_chart_url, :sku_name, :current_target, :old_target, :pack_constraint)";
 
                 $stmt = $conn->prepare($insertTemp);
 
@@ -105,9 +107,11 @@ switch ($accion) {
                 throw new Exception("No hay datos de la API para insertar en la tabla temporal.");
             }
 
+            $tablaAuxiliar = "Siti.dbo.BYS_Buffer_Reporte_test";
+
             // Consulta para combinar datos del buffer y la tabla temporal de la API
             $sqlCombinedData = "declare @Vision INT = " . $agrupacion . ", --1 Global, 2 Region, 3 Plaza, 4 Tienda.
-	                                    @AuxVision VARCHAR(MAX) = '" . $auxAgrupacion . "' --Dependiendo la vision seria el concatenado de lo que quiere ver, ya sea region, plaza o tienda. 
+	                                    @AuxVision VARCHAR(MAX) = '" . $auxAgrupacion . "'
                                 SELECT B.*, T.*
                                         FROM $tempName T
                                         inner JOIN (
@@ -115,7 +119,7 @@ switch ($accion) {
                                             FROM (
                                                 SELECT LEFT(T0.ItemCode,20) ITEMCODE, LEFT(T1.WhsCode,8) WhsCode, T0.Buffer,
                                                     ROW_NUMBER() OVER (PARTITION BY T0.ItemCode, T1.WhsCode ORDER BY T0.ItemCode, T1.WhsCode, T0.Fecha DESC, T0.Hora DESC) Num
-                                                FROM SITI..BYS_Buffer T0 WITH (NOLOCK)
+                                                FROM $tablaAuxiliar T0 WITH (NOLOCK)
                                                 inner join BDGRUPOS_BUENA..OWHS T1 ON T1.WhsCode = T0.WhsCode 
                                                 WHERE T0.Fecha <= GETDATE() AND T0.Empresa = 'BDGRUPOS_BUENA'
                                                 AND (
@@ -157,6 +161,98 @@ switch ($accion) {
 
         echo json_encode($combinedData);
         break;
+
+    case 'APLICARBUFFER':
+        $combinedData = [];
+        try {
+            $dataTableData = isset($_POST['dataTableData']) ? $_POST['dataTableData'] : null;
+            $dataTableData = json_decode($_POST['dataTableData']);
+            $agrupacion = isset($_POST['agrupacion']) ? $_POST['agrupacion'] : null;
+            $auxAgrupacion = isset($_POST['auxAgrupacion']) ? $_POST['auxAgrupacion'] : null;
+            require('dbconnection.php');
+            require('getapi.php');
+
+            // Datos de conexión a SQL
+            $server = '172.19.0.31';
+            $user = 'react';
+            $password = 'SAPFrogs09';
+            $database = 'Siti';
+
+            $auxAgrupacion = isset($_POST['auxAgrupacion']) && is_array($_POST['auxAgrupacion']) ? join(",", $_POST['auxAgrupacion']) : '';
+
+            // Obtener conexión a la base de datos
+            $conn = getDatabaseConnection($server, $user, $password, $database);
+
+            // print_r($dataTableData);
+
+            // Crear tabla temporal
+            $tablaBuffer = '##tablaBuffer';
+            $dropTemp = "IF OBJECT_ID('tempdb..$tablaBuffer', 'U') IS NOT NULL DROP TABLE $tablaBuffer";
+
+            $conn->exec($dropTemp);
+
+            $createTemp = "CREATE TABLE $tablaBuffer (
+                            warehouse VARCHAR(255),
+                            sku VARCHAR(255),
+                            sku_name VARCHAR(255),
+                            current_target INT,
+                            buffer INT,
+                            diferencia INT 
+                        )";
+            $conn->exec($createTemp);
+
+            if (!empty($dataTableData)) {
+                // Preparar consulta de inserción
+                $insertTemp = "INSERT INTO $tablaBuffer (warehouse, sku, sku_name, current_target, buffer, diferencia)
+                            VALUES (:warehouse, :sku, :sku_name, :current_target, :buffer, :diferencia)";
+
+                $stmt = $conn->prepare($insertTemp);
+
+                // Iterar sobre los datos de la dataTable y realizar la inserción
+                foreach ($dataTableData as $data) {
+                    $locations_external_id = $data['0'];
+                    $skus_external_id = $data['1'];
+                    $sku_name = $data['2'];
+                    $current_target = $data['3'];
+                    $buffer = $data['4'];
+                    $diferencia = $data['5'];
+
+                    $stmt->bindValue(':warehouse', $locations_external_id);
+                    $stmt->bindValue(':sku', $skus_external_id);
+                    $stmt->bindValue(':sku_name', $sku_name);
+                    $stmt->bindValue(':current_target', $current_target);
+                    $stmt->bindValue(':buffer', $buffer);
+                    $stmt->bindValue(':diferencia', $diferencia);
+                    $stmt->execute();
+                }
+            } else {
+                throw new Exception("No hay datos de la API para insertar en la tabla temporal.");
+            }
+
+            $tablaAuxiliar = 'Siti.dbo.BYS_Buffer_Reporte_test';
+
+            // Consulta para actualizar el campo buffer en Siti.dbo.BYS_Buffer_Reporte_test
+            $updateBufferSQL = "UPDATE B
+                                SET B.buffer = T.current_target
+                                FROM $tablaBuffer T
+                                INNER JOIN $tablaAuxiliar B
+                                ON B.WhsCode COLLATE SQL_Latin1_General_CP1_CI_AS = T.warehouse COLLATE SQL_Latin1_General_CP1_CI_AS
+                                AND B.ItemCode COLLATE SQL_Latin1_General_CP1_CI_AS = T.sku COLLATE SQL_Latin1_General_CP1_CI_AS";
+                            // AND B.sku_name = T.sku_name";
+
+            $conn->exec($updateBufferSQL);
+
+            // Cerrar la conexión a la base de datos
+            $conn = null;
+
+        } catch (Exception $e) {
+            echo "Error: " . $e->getMessage();
+            error_log($e->getMessage(), 3, "error_log.txt");
+            exit;
+        }
+
+        echo json_encode('Se aplicó el buffer correctamente');
+        exit;
 }
 
 ?>
