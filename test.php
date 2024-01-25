@@ -18,7 +18,7 @@ require('opcionesFiltrado.php');
     <!-- Hoja de estilos -->
     <link rel="stylesheet" href="./css/styles.css">
     <!-- DataTables CSS -->
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.css" />
+    <link href="DataTables/datatables.min.css" rel="stylesheet">
     <!-- Incluir SweetAlert2 CSS con el tema de Bootstrap -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@10.16.6/dist/sweetalert2.min.css">
 </head>
@@ -115,7 +115,7 @@ require('opcionesFiltrado.php');
                 <th class="text-center">Diferencia</th>
             </thead>
             <tbody>
-                <!-- <?php
+                <?php
                 foreach ($combinedData as $item) {
                     // Verificar si la clave "buffer_sql" existe en el array actual
                     $bufferValue = isset($item['Buffer']) ? $item['Buffer'] : 0;
@@ -154,7 +154,7 @@ require('opcionesFiltrado.php');
 
                     <?php
                 }
-                ?> -->
+                ?>
             </tbody>
             <tfoot>
                 <tr>
@@ -176,9 +176,7 @@ require('opcionesFiltrado.php');
     integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
     crossorigin="anonymous"></script>
 <!-- Include jQuery -->
-<script src="https://code.jquery.com/jquery-3.7.1.js"></script>
-<!-- DataTables JS -->
-<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.js"></script>
+<script src="DataTables/datatables.min.js"></script>
 <!-- Incluir Exportación Excel y PDF -->
 <script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.9/pdfmake.min.js"
@@ -204,10 +202,10 @@ require('opcionesFiltrado.php');
         const buffer = document.getElementById('buffer');
 
         var dataTableInstance = new DataTable('#dataTable', {
-            language: {
-                search: 'Buscar: ',
-                url: 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-MX.json'
-            },
+            // language: {
+            //     search: 'Buscar: ',
+            //     url: 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-MX.json'
+            // },
             "columns": [
                 { "width": "5%" },
                 { "width": "15%" },
@@ -409,6 +407,7 @@ require('opcionesFiltrado.php');
             });
 
             function cargarTablaFiltrada() {
+                $('#loadingOverlay').show();
                 plazasTiendas = new Array();
                 $(".contOpcion input").each(function () {
                     if ($(this).prop("checked")) {
@@ -627,10 +626,10 @@ require('opcionesFiltrado.php');
 
                             // Volver a inicializar DataTable con los nuevos datos
                             dataTableInstance = new DataTable('#dataTable', {
-                                language: {
-                                    search: 'Buscar: ',
-                                    url: 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-MX.json'
-                                },
+                                // language: {
+                                //     search: 'Buscar: ',
+                                //     url: 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-MX.json'
+                                // },
                                 "columns": [
                                     { "width": "5%" },
                                     { "width": "15%" },
@@ -641,26 +640,15 @@ require('opcionesFiltrado.php');
                                 ]
                             });
 
-                            // // Agregar un evento que se dispare después de cada dibujo de la tabla
-                            // dataTableInstance.on('draw.dt', function () {
-                            //     // Verificar si se debe ejecutar el callback
-                            //     if (!bufferAplicado && callback && typeof callback === 'function') {
-                            //         // Llamar al callback solo si no se aplicó el buffer y se proporcionó y es una función
-                            //         callback();
-                            //     }
-                            //     // Restablecer la variable después de ejecutar el callback
-                            //     bufferAplicado = false;
-                            // });
-
-
                             $('#opcionesModal').modal('hide');
+                            $('#loadingOverlay').show();
                         } else {
                             // Volver a inicializar DataTable
                             dataTableInstance = new DataTable('#dataTable', {
-                                language: {
-                                    search: 'Buscar: ',
-                                    url: 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-MX.json'
-                                },
+                                // language: {
+                                //     search: 'Buscar: ',
+                                //     url: 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-MX.json'
+                                // },
                                 "columns": [
                                     { "width": "5%" },
                                     { "width": "15%" },
@@ -675,7 +663,7 @@ require('opcionesFiltrado.php');
                             Swal.fire({
                                 icon: 'error',
                                 title: 'Error',
-                                text: 'La respuesta no es un array o no tiene datos.',
+                                text: 'No se encontraron registros.',
                                 confirmButtonText: 'Aceptar',
                                 customClass: {
                                     container: 'sweetalert-container',
@@ -714,8 +702,6 @@ require('opcionesFiltrado.php');
                                 cancelButton: 'sweetalert-cancel-button',
                             }
                         });
-
-
                         // Ocultar el loader en caso de error
                         $('#loadingOverlay').hide();
                     }
@@ -774,9 +760,13 @@ require('opcionesFiltrado.php');
                             beforeSend: function () {
                                 // Mostrar el loader antes de la solicitud AJAX
                                 $('#loadingOverlay').show();
+
                             },
                             success: function (response) {
                                 // Lógica para manejar la respuesta exitosa del buffer
+
+                                cargarTablaFiltrada();
+
                                 Swal.fire({
                                     icon: 'success',
                                     title: 'Aplicar buffer',

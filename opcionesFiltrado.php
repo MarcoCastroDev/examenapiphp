@@ -21,7 +21,7 @@ switch ($accion) {
             $connectionInfo = array("Database" => "BDGrupoS_Buena", "UID" => $user, "PWD" => $password);
             $conn = sqlsrv_connect($server, $connectionInfo);
             if ($conn === false) {
-                die(print_r(sqlsrv_errors(), true));
+                throw new Exception(print_r(sqlsrv_errors(), true));
             }
             if ($inclu_bodega_ == 0) {
                 $sql = "SELECT WhsCode Code, WhsName name, CASE  WHEN U_bys_clasificacion in (2) then 'T_SKORO' else 'T_FROGS' END tipo FROM BDGrupoS_Buena..OWHS WHERE U_U_BYS_MAXIMIZADOR IN(2,4) and Location in(" . $plazasTiendas . ") order by  WhsName ";
@@ -29,10 +29,8 @@ switch ($accion) {
             if ($inclu_bodega_ == 1) {
                 $sql = "SELECT WhsCode Code, WhsName name FROM BDGrupoS_Buena..OWHS WHERE U_U_BYS_MAXIMIZADOR IN(2,4,3,1) and Location in(" . $plazasTiendas . ") order by  WhsName ";
             }
-            $stmt = sqlsrv_query($conn, $sql);
-            if ($stmt === false) {
-                die(print_r(sqlsrv_errors(), true));
-            }
+            $stmt = executeQuery($conn, $sql);
+            
             $conjuntosChecks = "<div class='p-1'><label for='tienda_all' ><input class='me-1' type='checkbox' id='tienda_all' />Seleccionar Todo</label></div>";
             while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
                 $conjuntosChecks .= "<div class='contOpcionPlaza div50Tienda " . $row['tipo'] . "' idtienda='" . $row['Code'] . "' ><label class='p-1' for='tienda_" . $row['Code'] . "' ><input class='me-1' type='checkbox' id='tienda_" . $row['Code'] . "' />" . $row['name'] . "</label></div>";
@@ -253,6 +251,16 @@ switch ($accion) {
 
         echo json_encode('Se aplicó el buffer correctamente');
         exit;
+}
+
+// Después
+function executeQuery($conn, $sql)
+{
+    $stmt = sqlsrv_query($conn, $sql);
+    if ($stmt === false) {
+        throw new Exception(print_r(sqlsrv_errors(), true));
+    }
+    return $stmt;
 }
 
 ?>
