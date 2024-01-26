@@ -21,14 +21,14 @@ try {
 	$conn->exec($dropTemp);
 
 	$createTemp = "CREATE TABLE $tempName (
-    locations_external_id VARCHAR(255),
-    skus_external_id VARCHAR(255),
-    sku_chart_url VARCHAR(255),
-    sku_name VARCHAR(255),
-    current_target INT,
-    old_target INT,
-    pack_constraint INT 
-)";
+						locations_external_id VARCHAR(255),
+						skus_external_id VARCHAR(255),
+						sku_chart_url VARCHAR(255),
+						sku_name VARCHAR(255),
+						current_target INT,
+						old_target INT,
+						pack_constraint INT 
+					)";
 	$conn->exec($createTemp);
 
 	// Obtener datos de la API
@@ -92,5 +92,7 @@ try {
 	error_log($e->getMessage(), 3, "error_log.txt");
 	exit;
 }
+
+// echo json_encode($combinedData);
 
 ?>

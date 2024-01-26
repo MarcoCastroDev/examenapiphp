@@ -9,8 +9,8 @@ body {
 }
 
 .dataTables_wrapper {
-    width: 95%;
-    margin-left: 3rem !important;
+    width: 91%;
+    margin-left: 4rem !important;
     margin: 2rem;
     table-layout: fixed;
 }
@@ -212,7 +212,7 @@ body {
 }
 
 #buttons {
-    width: 138%;
+    width: 135.5%;
     margin-left: -13.5rem !important;
     margin: 1.5rem 0 0 0;
 }

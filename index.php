@@ -1,5 +1,5 @@
 <?php
-// require('cargaDatos.php');
+require('cargaDatos.php');
 require('opcionesFiltrado.php');
 ?>
 
@@ -9,8 +9,7 @@ require('opcionesFiltrado.php');
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reporte de
-        OneBeat vs Buffer</title>
+    <title>Reporte de OneBeat vs Buffer</title>
     <link rel="shortcut icon" href="img\faviconTGC.ico" />
     <!-- Llamado de Bootsrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
@@ -118,7 +117,7 @@ require('opcionesFiltrado.php');
                 <?php
                 foreach ($combinedData as $item) {
                     // Verificar si la clave "buffer_sql" existe en el array actual
-                    $bufferValue = isset($item['Buffer']) ? $item['Buffer'] : 0;
+                    $currentTargetValue = isset($item['current_target']) ? $item['current_target'] : 'Sin datos';
                     // Calcular la diferencia
                     $diferencia = $item['current_target'] - $item['Buffer'];
                     // Determinar la clase de estilo basada en el valor de diferencia
@@ -142,7 +141,7 @@ require('opcionesFiltrado.php');
                             <?= $item['sku_name'] ?>
                         </td>
                         <td class="text-center">
-                            <?= $item['current_target'] ?>
+                            <?= $currentTargetValue ?>
                         </td>
                         <td class="text-center">
                             <?= $item['Buffer'] ?>
@@ -194,7 +193,21 @@ require('opcionesFiltrado.php');
     $(function () {
         $("#agrupadoPor").change();
     });
+    // // Configurar el loader para que se muestre en cada solicitud Ajax
+    // $(document).ajaxStart(function () {
+    //     $('#loadingOverlay').show();
+    // });
+
+    // // Ocultar el loader cuando todas las solicitudes Ajax se completen
+    // $(document).ajaxStop(function () {
+    //     $('#loadingOverlay').hide();
+    // });
     document.addEventListener('DOMContentLoaded', function () {
+        // Mostrar el loader antes de la solicitud AJAX
+        // $('#loadingOverlay').show();
+        // Llama a la función cargarDatos al cargar la página
+        // cargarDatos();
+
         const noResultsRow = document.getElementById('noResultsRow');
         const searchInput = document.getElementById('searchInput');
         const dataTable = document.getElementById('dataTable');
@@ -202,10 +215,6 @@ require('opcionesFiltrado.php');
         const buffer = document.getElementById('buffer');
 
         var dataTableInstance = new DataTable('#dataTable', {
-            // language: {
-            //     search: 'Buscar: ',
-            //     url: 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-MX.json'
-            // },
             "columns": [
                 { "width": "5%" },
                 { "width": "15%" },
@@ -216,7 +225,82 @@ require('opcionesFiltrado.php');
             ]
         });
 
+        function cargarDatos() {
+            var data = {
+                accion: 'CARGAINICIALDATOS',
+            };
+
+            $.ajax({
+                type: 'post',
+                url: './opcionesFiltrado.php',
+                data: data,
+                dataType: "json",
+                beforeSend: function () {
+                    // Mostrar el loader antes de la solicitud AJAX
+                    $('#loadingOverlay').show();
+                },
+                success: function (response) {
+                    console.log('carga inicial');
+                    // Limpiar la tabla
+                    $('#dataTable tbody').empty();
+
+                    // Verificar si la respuesta es un array y tiene datos
+                    if (Array.isArray(response) && response.length > 0) {
+                        // Obtener el elemento de la tabla
+                        var table = document.getElementById("dataTable");
+                        $(table).find('tbody').empty();
+
+                        // Crear un fragmento de documento para optimizar la manipulación del DOM
+                        var fragment = document.createDocumentFragment();
+
+                        // Iterar sobre los datos y agregar filas al fragmento
+                        response.forEach(function (item) {
+                            // ... (resto del código para construir las filas)
+                        });
+
+                        // Agregar todas las filas al cuerpo de la tabla de una vez
+                        $('#dataTable tbody').append(fragment);
+
+                        // Volver a inicializar DataTable con los nuevos datos
+                        dataTableInstance.destroy(); // Destruir la instancia anterior
+                        dataTableInstance = new DataTable('#dataTable', {
+                            "columns": [
+                                { "width": "5%" },
+                                { "width": "15%" },
+                                { "width": "62%" },
+                                { "width": "8%" },
+                                { "width": "5%" },
+                                { "width": "5%" },
+                            ]
+                        });
+
+                        $('#opcionesModal').modal('hide');
+                    } else {
+                        // Si no hay datos, mostrar mensaje de error
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'No se encontraron registros.',
+                            confirmButtonText: 'Aceptar',
+                        });
+                    }
+                },
+                error: function (xhr, status, error) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error en la solicitud AJAX',
+                        html: xhr.responseText.replace(/<br \/>/g, ''),
+                        confirmButtonText: 'Aceptar',
+                    });
+                }
+                        // Ocultar el loader después de cargar los datos
+                        $('#loadingOverlay').hide();
+            });
+        }
+
+
         $(document).ready(function () {
+
             // Manejo del cambio en el agrupador
             $("#agrupadoPor").on("change", function () {
                 var contOpcionVision = "";
@@ -381,18 +465,6 @@ require('opcionesFiltrado.php');
                             title: 'Error al enviar datos',
                             text: 'Posibles errores:\n- El servidor no ha respondido a su solicitud (inténtelo de nuevo).\n- La sesión ha expirado (actualize la página web o teclee F5).\n- Ha cancelado la petición al servidor.',
                             confirmButtonText: 'Aceptar',
-                            customClass: {
-                                container: 'sweetalert-container',
-                                popup: 'sweetalert-popup',
-                                header: 'sweetalert-header',
-                                title: 'sweetalert-title',
-                                closeButton: 'sweetalert-close-button',
-                                icon: 'sweetalert-icon',
-                                text: 'sweetalert-text',
-                                footer: 'sweetalert-footer',
-                                confirmButton: 'sweetalert-confirm-button',
-                                cancelButton: 'sweetalert-cancel-button',
-                            }
                         });
 
                     }
@@ -447,18 +519,6 @@ require('opcionesFiltrado.php');
                                 title: 'Error de selección',
                                 text: 'Es necesario que seleccione por lo menos una opción, en la selección de regiones',
                                 confirmButtonText: 'Aceptar',
-                                customClass: {
-                                    container: 'sweetalert-container',
-                                    popup: 'sweetalert-popup',
-                                    header: 'sweetalert-header',
-                                    title: 'sweetalert-title',
-                                    closeButton: 'sweetalert-close-button',
-                                    icon: 'sweetalert-icon',
-                                    text: 'sweetalert-text',
-                                    footer: 'sweetalert-footer',
-                                    confirmButton: 'sweetalert-confirm-button',
-                                    cancelButton: 'sweetalert-cancel-button',
-                                }
                             });
                             return false;
                         }
@@ -480,18 +540,6 @@ require('opcionesFiltrado.php');
                                 title: 'Error de selección',
                                 text: 'Es necesario que seleccione por lo menos una opción, en la selección de plazas',
                                 confirmButtonText: 'Aceptar',
-                                customClass: {
-                                    container: 'sweetalert-container',
-                                    popup: 'sweetalert-popup',
-                                    header: 'sweetalert-header',
-                                    title: 'sweetalert-title',
-                                    closeButton: 'sweetalert-close-button',
-                                    icon: 'sweetalert-icon',
-                                    text: 'sweetalert-text',
-                                    footer: 'sweetalert-footer',
-                                    confirmButton: 'sweetalert-confirm-button',
-                                    cancelButton: 'sweetalert-cancel-button',
-                                }
                             });
                             return false;
                         }
@@ -515,18 +563,6 @@ require('opcionesFiltrado.php');
                                 title: 'Error de selección',
                                 text: 'Es necesario que seleccione por lo menos una opción, en la selección de tiendas',
                                 confirmButtonText: 'Aceptar',
-                                customClass: {
-                                    container: 'sweetalert-container',
-                                    popup: 'sweetalert-popup',
-                                    header: 'sweetalert-header',
-                                    title: 'sweetalert-title',
-                                    closeButton: 'sweetalert-close-button',
-                                    icon: 'sweetalert-icon',
-                                    text: 'sweetalert-text',
-                                    footer: 'sweetalert-footer',
-                                    confirmButton: 'sweetalert-confirm-button',
-                                    cancelButton: 'sweetalert-cancel-button',
-                                }
                             });
                             return false;
                         }
@@ -571,8 +607,9 @@ require('opcionesFiltrado.php');
                             response.forEach(function (item) {
                                 // Verificar si la clave "Buffer" existe en el objeto actual
                                 var bufferValue = item.Buffer || 0;
+                                var currentTargetValue = item.current_target || 0;
                                 // Calcular la diferencia
-                                var diferencia = item.current_target - bufferValue;
+                                var diferencia = currentTargetValue - bufferValue;
                                 // Determinar la clase de estilo basada en el valor de diferencia
                                 var classStyle = '';
                                 if (diferencia > 0) {
@@ -665,18 +702,6 @@ require('opcionesFiltrado.php');
                                 title: 'Error',
                                 text: 'No se encontraron registros.',
                                 confirmButtonText: 'Aceptar',
-                                customClass: {
-                                    container: 'sweetalert-container',
-                                    popup: 'sweetalert-popup',
-                                    header: 'sweetalert-header',
-                                    title: 'sweetalert-title',
-                                    closeButton: 'sweetalert-close-button',
-                                    icon: 'sweetalert-icon',
-                                    text: 'sweetalert-text',
-                                    footer: 'sweetalert-footer',
-                                    confirmButton: 'sweetalert-confirm-button',
-                                    cancelButton: 'sweetalert-cancel-button',
-                                }
                             });
 
                         }
@@ -689,18 +714,6 @@ require('opcionesFiltrado.php');
                             title: 'Error en la solicitud AJAX',
                             html: xhr.responseText.replace(/<br \/>/g, ''),
                             confirmButtonText: 'Aceptar',
-                            customClass: {
-                                container: 'sweetalert-container',
-                                popup: 'sweetalert-popup',
-                                header: 'sweetalert-header',
-                                title: 'sweetalert-title',
-                                closeButton: 'sweetalert-close-button',
-                                icon: 'sweetalert-icon',
-                                text: 'sweetalert-text',
-                                footer: 'sweetalert-footer',
-                                confirmButton: 'sweetalert-confirm-button',
-                                cancelButton: 'sweetalert-cancel-button',
-                            }
                         });
                         // Ocultar el loader en caso de error
                         $('#loadingOverlay').hide();
@@ -719,18 +732,6 @@ require('opcionesFiltrado.php');
                     cancelButtonColor: '#d33',
                     confirmButtonText: 'Aceptar',
                     cancelButtonText: 'Cancelar',
-                    customClass: {
-                        container: 'sweetalert-container',
-                        popup: 'sweetalert-popup',
-                        header: 'sweetalert-header',
-                        title: 'sweetalert-title',
-                        closeButton: 'sweetalert-close-button',
-                        icon: 'sweetalert-icon',
-                        text: 'sweetalert-text',
-                        footer: 'sweetalert-footer',
-                        confirmButton: 'sweetalert-confirm-button',
-                        cancelButton: 'sweetalert-cancel-button',
-                    }
                 }).then((result) => {
                     // Si el usuario hace clic en "Aceptar"
                     if (result.isConfirmed) {
@@ -772,18 +773,6 @@ require('opcionesFiltrado.php');
                                     title: 'Aplicar buffer',
                                     html: response,
                                     confirmButtonText: 'Aceptar',
-                                    customClass: {
-                                        container: 'sweetalert-container',
-                                        popup: 'sweetalert-popup',
-                                        header: 'sweetalert-header',
-                                        title: 'sweetalert-title',
-                                        closeButton: 'sweetalert-close-button',
-                                        icon: 'sweetalert-icon',
-                                        text: 'sweetalert-text',
-                                        footer: 'sweetalert-footer',
-                                        confirmButton: 'sweetalert-confirm-button',
-                                        cancelButton: 'sweetalert-cancel-button',
-                                    }
                                 });
 
                                 // Ocultar el loader después de aplicar el buffer
@@ -795,18 +784,6 @@ require('opcionesFiltrado.php');
                                     title: 'Error en la solicitud AJAX',
                                     html: xhr.responseText.replace(/<br \/>/g, ''),
                                     confirmButtonText: 'Aceptar',
-                                    customClass: {
-                                        container: 'sweetalert-container',
-                                        popup: 'sweetalert-popup',
-                                        header: 'sweetalert-header',
-                                        title: 'sweetalert-title',
-                                        closeButton: 'sweetalert-close-button',
-                                        icon: 'sweetalert-icon',
-                                        text: 'sweetalert-text',
-                                        footer: 'sweetalert-footer',
-                                        confirmButton: 'sweetalert-confirm-button',
-                                        cancelButton: 'sweetalert-cancel-button',
-                                    }
                                 });
                                 $('#loadingOverlay').hide();
                             }

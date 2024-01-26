@@ -1,6 +1,9 @@
 function exportPdf() {
-  var table = document.getElementById("dataTable");
-  var data = [];
+  // Obtener la instancia de DataTable
+  var dataTableInstance = $('#dataTable').DataTable();
+
+  // Obtener todos los datos de DataTable
+  var data = dataTableInstance.rows().data().toArray();
 
   var now = new Date();
   var timestamp =
@@ -78,75 +81,35 @@ function exportPdf() {
   };
 
   try {
-    // Obtener solo las filas visibles en la tabla después de aplicar el filtro
-    var visibleRows = Array.from(
-      table.querySelectorAll("tbody tr:not(#noResultsRow)")
-    ).filter((row) => row.style.display !== "none");
+    // Agregar encabezados al documento PDF
+    var headerCells = $('#dataTable thead th').toArray();
+    var headerData = [];
+    for (var i = 0; i < headerCells.length; i++) {
+      headerData.push({ text: headerCells[i].textContent.trim(), style: "header" });
+    }
+    pdfDefinition.content[0].table.body.push(headerData);
 
-    // Iterar sobre las filas de la tabla y agregar datos al array
-    visibleRows.forEach(function (row) {
-      var cells = row.cells;
-      var diferenciaValue = parseInt(cells[5].textContent.trim());
+    // Agregar datos al documento PDF
+    for (var i = 0; i < data.length; i++) {
+      var rowData = [
+        { text: data[i][0], style: "centerAligned" },
+        { text: data[i][1], style: "centerAligned" },
+        { text: data[i][2], style: "leftAligned" },
+        { text: data[i][3], style: "centerAligned" },
+        { text: data[i][4], style: "centerAligned" },
+        { text: data[i][5], style: data[i][5] < 0 ? "redText" : (data[i][5] === 0 ? "blueText" : "greenText") },
+      ];
+      pdfDefinition.content[0].table.body.push(rowData);
+    }
 
-      // Establecer el estilo de color según el valor de "Diferencia"
-      var diferenciaStyle =
-        diferenciaValue < 0
-          ? "redText"
-          : diferenciaValue === 0
-            ? "blueText"
-            : "greenText";
-
-      var item = {
-        Warehouse: { text: cells[0].textContent.trim(), style: "centerAligned" },
-        SKU: { text: cells[1].textContent.trim(), style: "centerAligned" },
-        "SKU NAME": { text: cells[2].textContent.trim(), style: "leftAligned" },
-        "PACK Constraint": { text: cells[3].textContent.trim(), style: "centerAligned" },
-        Buffer: { text: cells[4].textContent.trim(), style: "centerAligned" },
-        Diferencia: { text: cells[5].textContent.trim(), style: diferenciaStyle },
-      };
-      data.push(item);
-    });
-  }
-  catch {
+    // Generar el archivo PDF
+    const pdf = createPdf(pdfDefinition);
+    pdf.download("Reporte_OBvsBuffer_" + timestamp + ".pdf");
+  } catch (error) {
     Swal.fire({
       icon: 'info',
       title: 'No hay datos para exportar',
       text: 'Por favor, verifica tus filtros y asegúrate de que haya datos visibles en la tabla.',
     });
   }
-
-  // Verificar si hay datos para exportar
-  if (data.length === 0) {
-    Swal.fire({
-      icon: 'info',
-      title: 'No hay datos para exportar',
-      text: 'Por favor, verifica tus filtros y asegúrate de que haya datos visibles en la tabla.',
-    });
-    return;
-  }
-
-  // Agregar encabezados al documento PDF
-  var headerCells = table.querySelectorAll("thead th");
-  var headerData = [];
-  for (var i = 0; i < headerCells.length; i++) {
-    headerData.push({ text: headerCells[i].textContent.trim(), style: "header" });
-  }
-  pdfDefinition.content[0].table.body.push(headerData);
-
-  // Agregar datos al documento PDF
-  for (var i = 0; i < data.length; i++) {
-    var rowData = [
-      data[i].Warehouse,
-      data[i].SKU,
-      data[i]["SKU NAME"],
-      data[i]["PACK Constraint"],
-      data[i].Buffer,
-      data[i].Diferencia,
-    ];
-    pdfDefinition.content[0].table.body.push(rowData);
-  }
-
-  // Generar el archivo PDF
-  const pdf = createPdf(pdfDefinition);
-  pdf.download("Reporte_OBvsBuffer_" + timestamp + ".pdf");
 }
