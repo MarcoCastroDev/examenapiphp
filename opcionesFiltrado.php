@@ -212,7 +212,6 @@ switch ($accion) {
                                     B.*,
                                     T.*,
                                     CASE
-                                        WHEN T2.QryGroup4 = 'Y' THEN 'Accesorio'
                                         WHEN T2.QryGroup2 = 'Y' THEN 'Moda'
                                         WHEN T2.QryGroup1 = 'Y' THEN 'Linea'
                                         ELSE ''
@@ -367,7 +366,8 @@ switch ($accion) {
                                         GETDATE()                        AS Fecha,
                                         CONVERT(VARCHAR, GETDATE(), 108) AS Hora,
                                         'Y'                              AS OneBeat
-                                    FROM tablaBuffer";
+                                    FROM $tablaBuffer
+                                    WHERE diferencia != 0";
 
             $conn->exec($updateBufferSQL);
 

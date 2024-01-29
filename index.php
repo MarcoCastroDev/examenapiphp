@@ -225,6 +225,7 @@ require('opcionesFiltrado.php');
         const dataTable = document.getElementById('dataTable');
         const buscar = document.getElementById('buscar');
         const buffer = document.getElementById('buffer');
+        var auxBuffer = false;
 
         $('.dataWrapper').hide();
 
@@ -668,6 +669,7 @@ require('opcionesFiltrado.php');
                         }
                         // Ocultar el loader después de cargar los datos
                         $('#loadingOverlay').hide();
+
                     },
                     error: function (xhr, status, error) {
                         Swal.fire({
@@ -693,10 +695,11 @@ require('opcionesFiltrado.php');
                     cancelButtonColor: '#d33',
                     confirmButtonText: 'Aceptar',
                     cancelButtonText: 'Cancelar',
-                }).then((result) => {
+                }).then(function (result) {
                     // Si el usuario hace clic en "Aceptar"
                     if (result.isConfirmed) {
                         var agrupacion = $("#agrupadoPor").val();
+                        var auxBuffer = true;
 
                         var dataTableData = dataTableInstance.rows().data().toArray();
                         if (dataTableData.length === 0) {
@@ -713,42 +716,38 @@ require('opcionesFiltrado.php');
                             dataTableData: JSON.stringify(dataTableData),
                         };
 
+                        // Mostrar el loader antes de la solicitud AJAX
                         $('#loadingOverlay').show();
+
+                        // Realizar la solicitud AJAX
                         $.ajax({
                             type: 'post',
                             url: './opcionesFiltrado.php',
                             data: data,
                             dataType: "json",
-                            beforeSend: function () {
-                                // Mostrar el loader antes de la solicitud AJAX
-                                $('#loadingOverlay').show();
-
-                            },
                             success: function (response) {
                                 // Lógica para manejar la respuesta exitosa del buffer
 
-                                cargarTablaFiltrada();
-
-                                Swal.fire({
-                                    icon: 'success',
-                                    title: 'Aplicar buffer',
-                                    html: response,
-                                    confirmButtonText: 'Aceptar',
-                                });
-
                                 // Ocultar el loader después de aplicar el buffer
                                 $('#loadingOverlay').hide();
+
+                                // Cargar la tabla filtrada después de aplicar el buffer
+                                cargarTablaFiltrada();
                             },
                             error: function (xhr, status, error) {
+                                // Manejar errores en la solicitud AJAX
                                 Swal.fire({
                                     icon: 'error',
                                     title: 'Error en la solicitud AJAX',
                                     html: xhr.responseText.replace(/<br \/>/g, ''),
                                     confirmButtonText: 'Aceptar',
                                 });
+
+                                // Ocultar el loader en caso de error
                                 $('#loadingOverlay').hide();
                             }
                         });
+                        var auxBuffer = false;
                     }
                 });
             });
