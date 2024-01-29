@@ -111,10 +111,10 @@ function exportExcel() {
               cell.font = { color: { argb: "FF0000" }, ...styleArray.font };
             } else if (item[key] === 0) {
               // Azul para valores iguales a 0
-              cell.font = { color: { argb: "0000FF" }, ...styleArray.font };
+              cell.font = { color: { argb: "019a32" }, ...styleArray.font };
             } else {
               // Verde para valores positivos
-              cell.font = { color: { argb: "00FF00" }, ...styleArray.font };
+              cell.font = { color: { argb: "004cff" }, ...styleArray.font };
             }
           }
         });

@@ -358,17 +358,18 @@ switch ($accion) {
                 throw new Exception("No hay datos de la API para insertar en la tabla temporal.");
             }
 
-            $tablaAuxiliar = 'Siti.dbo.BYS_Buffer_Reporte_test';
+            $updateBufferSQL = "INSERT INTO Siti.dbo.BYS_Buffer (WhsCode, ItemCode, Empresa, Tipo, Buffer, Fecha, Hora, OneBeat)
+                                    SELECT warehouse,
+                                        sku,
+                                        'BDGrupoS_Buena'                 AS Empresa,
+                                        'N'                              AS Tipo,
+                                        current_target                   AS Buffer,
+                                        GETDATE()                        AS Fecha,
+                                        CONVERT(VARCHAR, GETDATE(), 108) AS Hora,
+                                        'Y'                              AS OneBeat
+                                    FROM tablaBuffer";
 
-            // $updateBufferSQL = "UPDATE B
-            //                     SET B.buffer = T.current_target
-            //                     FROM $tablaBuffer T
-            //                     INNER JOIN $tablaAuxiliar B
-            //                     ON B.WhsCode COLLATE SQL_Latin1_General_CP1_CI_AS = T.warehouse COLLATE SQL_Latin1_General_CP1_CI_AS
-            //                     AND B.ItemCode COLLATE SQL_Latin1_General_CP1_CI_AS = T.sku COLLATE SQL_Latin1_General_CP1_CI_AS";
-            // // AND B.sku_name = T.sku_name";
-
-            // $conn->exec($updateBufferSQL);
+            $conn->exec($updateBufferSQL);
 
             // Cerrar la conexión a la base de datos
             $conn = null;
