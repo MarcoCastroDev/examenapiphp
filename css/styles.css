@@ -6,6 +6,7 @@ body {
     width: 100vw;
     overflow-x: hidden;
     font-size: 14px;
+    /* background-color: darkolivegreen; */
 }
 
 .dataTables_wrapper {
@@ -13,6 +14,7 @@ body {
     margin-left: 4rem !important;
     margin: 2rem;
     table-layout: fixed;
+    /* display: none; */
 }
 
 #dataTable {

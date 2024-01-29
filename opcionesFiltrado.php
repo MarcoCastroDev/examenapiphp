@@ -204,36 +204,57 @@ switch ($accion) {
             } else {
                 throw new Exception("No hay datos de la API para insertar en la tabla temporal.");
             }
-
-            $tablaAuxiliar = "Siti.dbo.BYS_Buffer_Reporte_test";
-
+            // echo ('entro');
             // Consulta para combinar datos del buffer y la tabla temporal de la API
-            $sqlCombinedData = "declare @Vision INT = " . $agrupacion . ", --1 Global, 2 Region, 3 Plaza, 4 Tienda.
-	                                    @AuxVision VARCHAR(MAX) = '" . $auxAgrupacion . "'
-                                SELECT B.*, T.*
-                                        FROM $tempName T
-                                        inner JOIN (
-                                            SELECT ItemCode, Whscode, Buffer
-                                            FROM (
-                                                SELECT LEFT(T0.ItemCode,20) ITEMCODE, LEFT(T1.WhsCode,8) WhsCode, T0.Buffer,
-                                                    ROW_NUMBER() OVER (PARTITION BY T0.ItemCode, T1.WhsCode ORDER BY T0.ItemCode, T1.WhsCode, T0.Fecha DESC, T0.Hora DESC) Num
-                                                FROM $tablaAuxiliar T0 WITH (NOLOCK)
-                                                inner join BDGRUPOS_BUENA..OWHS T1 ON T1.WhsCode = T0.WhsCode 
-                                                WHERE T0.Fecha <= GETDATE() AND T0.Empresa = 'BDGRUPOS_BUENA'
-                                                AND (
-                                                    (@Vision = 1) --DE GRUPO, SE CONSULTA TODO; 59
-                                                    OR
-                                                    (@Vision = 2 AND T1.U_Bys_RegionWhs IN (SELECT Item FROM Siti..Split(@AuxVision,','))) --REGION, SOLO LAS REGIONES INTERESADAS
-                                                    OR
-                                                    (@Vision = 3 AND T1.Location IN (SELECT Item FROM Siti..Split(@AuxVision,','))) --PLAZA, SOLO LAS PLAZAS SELECCIONADAS
-                                                    OR
-                                                    (@Vision = 4 AND T1.WhsCode IN (SELECT Item FROM Siti..Split(@AuxVision,','))) --TIENDA, SOLO LAS TIENDAS SELECCIONADAS
-                                                )
-                                            ) AS Z
-                                            WHERE Z.NUM = 1
-                                            ) B
-                                            ON B.Whscode COLLATE SQL_Latin1_General_CP1_CI_AS = T.locations_external_id COLLATE SQL_Latin1_General_CP1_CI_AS
-                                            AND B.ItemCode COLLATE SQL_Latin1_General_CP1_CI_AS = T.skus_external_id COLLATE SQL_Latin1_General_CP1_CI_AS";
+            $sqlCombinedData = "DECLARE @Vision INT = " . $agrupacion . ",
+                                        @AuxVision VARCHAR(MAX) = '" . $auxAgrupacion . "';
+                                SELECT
+                                    B.*,
+                                    T.*,
+                                    CASE
+                                        WHEN T2.QryGroup4 = 'Y' THEN 'Accesorio'
+                                        WHEN T2.QryGroup2 = 'Y' THEN 'Moda'
+                                        WHEN T2.QryGroup1 = 'Y' THEN 'Linea'
+                                        ELSE ''
+                                        END AS TipoProducto,
+                                    CONVERT(INT, T3.OnHand) AS stock
+                                FROM apiTemp T
+                                        INNER JOIN
+                                    BDGRUPOS_BUENA..OITM T2 ON T2.ItemCode = T.skus_external_id COLLATE SQL_Latin1_General_CP1_CI_AS
+                                        LEFT JOIN
+                                    (SELECT ItemCode,
+                                            Whscode,
+                                            Buffer
+                                    FROM (SELECT LEFT(T0.ItemCode, 20) AS ITEMCODE,
+                                                LEFT(T1.WhsCode, 8) AS WhsCode,
+                                                T0.Buffer,
+                                                ROW_NUMBER() OVER (PARTITION BY T0.ItemCode, T1.WhsCode ORDER BY T0.Fecha DESC, T0.Hora DESC) AS Num
+                                            FROM Siti.dbo.BYS_Buffer T0 WITH (NOLOCK)
+                                                    INNER JOIN
+                                                BDGRUPOS_BUENA..OWHS T1 ON T1.WhsCode COLLATE SQL_Latin1_General_CP1_CI_AS = T0.WhsCode
+                                                    INNER JOIN
+                                                BDGRUPOS_BUENA..OITM T2 ON T2.ItemCode = T0.ItemCode
+                                            WHERE T0.Fecha <= GETDATE()
+                                            AND T0.Empresa = 'BDGRUPOS_BUENA') AS Z
+                                    WHERE Z.NUM = 1) B
+                                    ON
+                                        B.Whscode COLLATE SQL_Latin1_General_CP1_CI_AS = T.locations_external_id COLLATE SQL_Latin1_General_CP1_CI_AS
+                                            AND
+                                        B.ItemCode COLLATE SQL_Latin1_General_CP1_CI_AS = T.skus_external_id COLLATE SQL_Latin1_General_CP1_CI_AS
+                                        INNER JOIN
+                                    BDGRUPOS_BUENA..OWHS T1
+                                    ON T1.WhsCode COLLATE SQL_Latin1_General_CP1_CI_AS = T.locations_external_id COLLATE SQL_Latin1_General_CP1_CI_AS
+                                        LEFT JOIN
+                                    BDGRUPOS_BUENA..OITW T3 ON T3.WhsCode = T.locations_external_id AND T3.ItemCode = T.skus_external_id
+                                WHERE (
+                                        (@Vision = 1)
+                                            OR
+                                        (@Vision = 2 AND T1.U_Bys_RegionWhs IN (SELECT Item FROM Siti..Split(@AuxVision, ',')))
+                                            OR
+                                        (@Vision = 3 AND T1.Location IN (SELECT Item FROM Siti..Split(@AuxVision, ',')))
+                                            OR
+                                        (@Vision = 4 AND T1.WhsCode IN (SELECT Item FROM Siti..Split(@AuxVision, ',')))
+                                        );";
 
             // print_r($sqlCombinedData);
 
@@ -292,7 +313,9 @@ switch ($accion) {
             $createTemp = "CREATE TABLE $tablaBuffer (
                             warehouse VARCHAR(255),
                             sku VARCHAR(255),
+                            tipoProducto VARCHAR(255),
                             sku_name VARCHAR(255),
+                            stock INT,
                             current_target INT,
                             buffer INT,
                             diferencia INT 
@@ -301,8 +324,8 @@ switch ($accion) {
 
             if (!empty($dataTableData)) {
                 // Preparar consulta de inserción
-                $insertTemp = "INSERT INTO $tablaBuffer (warehouse, sku, sku_name, current_target, buffer, diferencia)
-                            VALUES (:warehouse, :sku, :sku_name, :current_target, :buffer, :diferencia)";
+                $insertTemp = "INSERT INTO $tablaBuffer (warehouse, sku, tipoProducto, sku_name, stock, current_target, buffer, diferencia)
+                            VALUES (:warehouse, :sku, :tipoProducto, :sku_name, :stock, :current_target, :buffer, :diferencia)";
 
                 $stmt = $conn->prepare($insertTemp);
 
@@ -310,14 +333,22 @@ switch ($accion) {
                 foreach ($dataTableData as $data) {
                     $locations_external_id = $data['0'];
                     $skus_external_id = $data['1'];
-                    $sku_name = $data['2'];
-                    $current_target = $data['3'];
-                    $buffer = $data['4'];
-                    $diferencia = $data['5'];
+                    $tipoProducto = $data['2'];
+                    $sku_name = $data['3'];
+                    $stock = $data['4'];
+                    $current_target = $data['5'];
+                    $buffer = $data['6'];
+                    $diferencia = $data['7'];
+
+                    // Convertir 'Sin datos' a null y mantener el valor original si no es 'Sin datos'
+                    $current_target_value = ($current_target === 'Sin datos') ? null : $current_target;
+                    $buffer = ($buffer === 'Sin datos') ? null : $buffer;
 
                     $stmt->bindValue(':warehouse', $locations_external_id);
                     $stmt->bindValue(':sku', $skus_external_id);
+                    $stmt->bindValue(':tipoProducto', $tipoProducto);
                     $stmt->bindValue(':sku_name', $sku_name);
+                    $stmt->bindValue(':stock', $stock);
                     $stmt->bindValue(':current_target', $current_target);
                     $stmt->bindValue(':buffer', $buffer);
                     $stmt->bindValue(':diferencia', $diferencia);
@@ -329,16 +360,15 @@ switch ($accion) {
 
             $tablaAuxiliar = 'Siti.dbo.BYS_Buffer_Reporte_test';
 
-            // Consulta para actualizar el campo buffer en Siti.dbo.BYS_Buffer_Reporte_test
-            $updateBufferSQL = "UPDATE B
-                                SET B.buffer = T.current_target
-                                FROM $tablaBuffer T
-                                INNER JOIN $tablaAuxiliar B
-                                ON B.WhsCode COLLATE SQL_Latin1_General_CP1_CI_AS = T.warehouse COLLATE SQL_Latin1_General_CP1_CI_AS
-                                AND B.ItemCode COLLATE SQL_Latin1_General_CP1_CI_AS = T.sku COLLATE SQL_Latin1_General_CP1_CI_AS";
-            // AND B.sku_name = T.sku_name";
+            // $updateBufferSQL = "UPDATE B
+            //                     SET B.buffer = T.current_target
+            //                     FROM $tablaBuffer T
+            //                     INNER JOIN $tablaAuxiliar B
+            //                     ON B.WhsCode COLLATE SQL_Latin1_General_CP1_CI_AS = T.warehouse COLLATE SQL_Latin1_General_CP1_CI_AS
+            //                     AND B.ItemCode COLLATE SQL_Latin1_General_CP1_CI_AS = T.sku COLLATE SQL_Latin1_General_CP1_CI_AS";
+            // // AND B.sku_name = T.sku_name";
 
-            $conn->exec($updateBufferSQL);
+            // $conn->exec($updateBufferSQL);
 
             // Cerrar la conexión a la base de datos
             $conn = null;

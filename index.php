@@ -1,5 +1,5 @@
 <?php
-require('cargaDatos.php');
+// require('cargaDatos.php');
 require('opcionesFiltrado.php');
 ?>
 
@@ -67,7 +67,7 @@ require('opcionesFiltrado.php');
                     </div>
                     <button type="button" class="btn btn-secondary" data-bs-toggle="modal"
                         data-bs-target="#opcionesModal">
-                        <i class="fa-solid fa-filter me-1"></i>Filtrar Resultados
+                        <i class="fa-solid fa-filter me-1"></i>Buscar Resultados
                     </button>
                 </div>
                 <!-- Modal -->
@@ -76,7 +76,7 @@ require('opcionesFiltrado.php');
                     <div class="modal-dialog modal-dialog-centered">
                         <div class="modal-content">
                             <div class="modal-header justify-content-center text-center">
-                                <h5 class="modal-title" id="exampleModalLabel text-center ">Filtrar</h5>
+                                <h5 class="modal-title" id="exampleModalLabel text-center ">Buscar Resultados</h5>
                                 <button type="button" class="btn-close" data-bs-dismiss="modal"
                                     aria-label="Close"></button>
                             </div>
@@ -89,14 +89,14 @@ require('opcionesFiltrado.php');
                                         <option value="3">Plaza</option>
                                         <option value="4">Tienda</option>
                                     </select>
-                                    <button type="button" class="btn btn-primary" id="buscar">
-                                        <i class="fa-solid fa-magnifying-glass me-1"></i>Buscar
                                     </button>
                                 </div>
                                 <div id="opcionVision" class="w-auto m-4"></div>
                             </div>
-                            <div class="modal-footer">
+                            <div class="modal-footer justify-content-between">
                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                                <button type="button" class="btn btn-primary" id="buscar">
+                                    <i class="fa-solid fa-magnifying-glass me-1"></i>Buscar
                             </div>
                         </div>
                     </div>
@@ -104,38 +104,49 @@ require('opcionesFiltrado.php');
             </div>
         </div>
         <!--Tabla de datos -->
-        <table id="dataTable" class="table table-responsive table-striped" style="width: 183vh; ">
-            <thead>
-                <th class="text-center">Warehouse</th>
-                <th class="text-center">SKU</th>
-                <th class="text-center">SKU name</th>
-                <th class="text-center">Current Target</th>
-                <th class="text-center">Buffer</th>
-                <th class="text-center">Diferencia</th>
-            </thead>
-            <tbody>
-                <?php
-                foreach ($combinedData as $item) {
-                    // Verificar si la clave "buffer_sql" existe en el array actual
-                    $currentTargetValue = isset($item['current_target']) ? $item['current_target'] : 'Sin datos';
-                    // Calcular la diferencia
-                    $diferencia = $item['current_target'] - $item['Buffer'];
-                    // Determinar la clase de estilo basada en el valor de diferencia
-                    $class = '';
-                    if ($diferencia > 0) {
-                        $class = 'text-primary';
-                    } elseif ($diferencia == 0) {
-                        $class = 'text-success';
-                    } else {
-                        $class = 'text-danger';
-                    }
-                    ?>
+        <div class="dataWrapper">
+            <table id="dataTable" class="table table-responsive table-striped" style="width: 183vh;">
+                <thead>
+                    <th class="text-center">Warehouse</th>
+                    <th class="text-center">SKU</th>
+                    <th class="text-center">Tipo de Producto</th>
+                    <th class="text-center">SKU name</th>
+                    <th class="text-center">Stock</th>
+                    <th class="text-center">Current Target</th>
+                    <th class="text-center">Buffer</th>
+                    <th class="text-center">Diferencia</th>
+                </thead>
+                <tbody>
+                    <!-- <?php
+                    foreach ($combinedData as $item) {
+                        // Verificar si la clave "buffer_sql" existe en el array actual
+                        $currentTargetValue = isset($item['current_target']) ? $item['current_target'] : 'Sin datos';
+                        if ($currentTargetValue <> 'Sin datos') {
+                            // Calcular la diferencia
+                            $diferencia = $item['current_target'] - $item['Buffer'];
+                        } else {
+                            $diferencia = 0;
+                        }
+
+                        // Determinar la clase de estilo basada en el valor de diferencia
+                        $class = '';
+                        if ($diferencia > 0) {
+                            $class = 'text-primary';
+                        } elseif ($diferencia == 0) {
+                            $class = 'text-success';
+                        } else {
+                            $class = 'text-danger';
+                        }
+                        ?>
                     <tr class="justify-content-center">
                         <td class="text-center">
                             <?= $item['locations_external_id'] ?>
                         </td>
                         <td class="text-center">
                             <?= $item['skus_external_id'] ?>
+                        </td>
+                        <td class="text-center">
+                            <?= $item['TipoProducto'] ?>
                         </td>
                         <td>
                             <?= $item['sku_name'] ?>
@@ -152,20 +163,24 @@ require('opcionesFiltrado.php');
                     </tr>
 
                     <?php
-                }
-                ?>
-            </tbody>
-            <tfoot>
-                <tr>
-                    <th class="text-center">Warehouse</th>
-                    <th class="text-center">SKU</th>
-                    <th class="text-center">SKU name</th>
-                    <th class="text-center">Current Target</th>
-                    <th class="text-center">Buffer</th>
-                    <th class="text-center">Diferencia</th>
-                </tr>
-            </tfoot>
-        </table>
+                    }
+                    ?> -->
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <th class="text-center">Warehouse</th>
+                        <th class="text-center">SKU</th>
+                        <th class="text-center">Tipo de Producto</th>
+                        <th class="text-center">SKU name</th>
+                        <th class="text-center">Stock</th>
+                        <th class="text-center">Current Target</th>
+                        <th class="text-center">Buffer</th>
+                        <th class="text-center">Diferencia</th>
+                    </tr>
+                </tfoot>
+            </table>
+
+        </div>
     </div>
 </body>
 
@@ -176,6 +191,7 @@ require('opcionesFiltrado.php');
     crossorigin="anonymous"></script>
 <!-- Include jQuery -->
 <script src="DataTables/datatables.min.js"></script>
+<script src="https://cdn.datatables.net/responsive/2.2.9/js/dataTables.responsive.min.js"></script>
 <!-- Incluir Exportación Excel y PDF -->
 <script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.9/pdfmake.min.js"
@@ -203,10 +219,6 @@ require('opcionesFiltrado.php');
     //     $('#loadingOverlay').hide();
     // });
     document.addEventListener('DOMContentLoaded', function () {
-        // Mostrar el loader antes de la solicitud AJAX
-        // $('#loadingOverlay').show();
-        // Llama a la función cargarDatos al cargar la página
-        // cargarDatos();
 
         const noResultsRow = document.getElementById('noResultsRow');
         const searchInput = document.getElementById('searchInput');
@@ -214,90 +226,21 @@ require('opcionesFiltrado.php');
         const buscar = document.getElementById('buscar');
         const buffer = document.getElementById('buffer');
 
+        $('.dataWrapper').hide();
+
+        // Inicializa el DataTable
         var dataTableInstance = new DataTable('#dataTable', {
             "columns": [
                 { "width": "5%" },
                 { "width": "15%" },
-                { "width": "62%" },
+                { "width": "10%" },
+                { "width": "47%" },
+                { "width": "5%" },
                 { "width": "8%" },
                 { "width": "5%" },
                 { "width": "5%" },
             ]
         });
-
-        function cargarDatos() {
-            var data = {
-                accion: 'CARGAINICIALDATOS',
-            };
-
-            $.ajax({
-                type: 'post',
-                url: './opcionesFiltrado.php',
-                data: data,
-                dataType: "json",
-                beforeSend: function () {
-                    // Mostrar el loader antes de la solicitud AJAX
-                    $('#loadingOverlay').show();
-                },
-                success: function (response) {
-                    console.log('carga inicial');
-                    // Limpiar la tabla
-                    $('#dataTable tbody').empty();
-
-                    // Verificar si la respuesta es un array y tiene datos
-                    if (Array.isArray(response) && response.length > 0) {
-                        // Obtener el elemento de la tabla
-                        var table = document.getElementById("dataTable");
-                        $(table).find('tbody').empty();
-
-                        // Crear un fragmento de documento para optimizar la manipulación del DOM
-                        var fragment = document.createDocumentFragment();
-
-                        // Iterar sobre los datos y agregar filas al fragmento
-                        response.forEach(function (item) {
-                            // ... (resto del código para construir las filas)
-                        });
-
-                        // Agregar todas las filas al cuerpo de la tabla de una vez
-                        $('#dataTable tbody').append(fragment);
-
-                        // Volver a inicializar DataTable con los nuevos datos
-                        dataTableInstance.destroy(); // Destruir la instancia anterior
-                        dataTableInstance = new DataTable('#dataTable', {
-                            "columns": [
-                                { "width": "5%" },
-                                { "width": "15%" },
-                                { "width": "62%" },
-                                { "width": "8%" },
-                                { "width": "5%" },
-                                { "width": "5%" },
-                            ]
-                        });
-
-                        $('#opcionesModal').modal('hide');
-                    } else {
-                        // Si no hay datos, mostrar mensaje de error
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error',
-                            text: 'No se encontraron registros.',
-                            confirmButtonText: 'Aceptar',
-                        });
-                    }
-                },
-                error: function (xhr, status, error) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error en la solicitud AJAX',
-                        html: xhr.responseText.replace(/<br \/>/g, ''),
-                        confirmButtonText: 'Aceptar',
-                    });
-                }
-                        // Ocultar el loader después de cargar los datos
-                        $('#loadingOverlay').hide();
-            });
-        }
-
 
         $(document).ready(function () {
 
@@ -606,10 +549,17 @@ require('opcionesFiltrado.php');
                             // Iterar sobre los datos y agregar filas al fragmento
                             response.forEach(function (item) {
                                 // Verificar si la clave "Buffer" existe en el objeto actual
-                                var bufferValue = item.Buffer || 0;
-                                var currentTargetValue = item.current_target || 0;
+                                var bufferValue = item.Buffer !== null ? item.Buffer : 'Sin datos';
+
+                                // Verificar si la clave "current_target" existe en el objeto actual
+                                var currentTargetValue = item.current_target !== null ? item.current_target : 'Sin datos';
+
+                                // Verificar si la clave "stock" existe en el objeto actual
+                                var stock = item.stock !== null ? item.stock : 'Sin datos';
+
                                 // Calcular la diferencia
-                                var diferencia = currentTargetValue - bufferValue;
+                                var diferencia = currentTargetValue !== 'Sin datos' && bufferValue !== 'Sin datos' ? currentTargetValue - bufferValue : 0;
+
                                 // Determinar la clase de estilo basada en el valor de diferencia
                                 var classStyle = '';
                                 if (diferencia > 0) {
@@ -619,7 +569,7 @@ require('opcionesFiltrado.php');
                                 } else {
                                     classStyle = 'text-danger';
                                 }
-                                const textCenter = 'text-center'
+                                const textCenter = 'text-center';
 
                                 // Crear la fila de la tabla con datos del objeto
                                 var row = document.createElement('tr');
@@ -634,12 +584,22 @@ require('opcionesFiltrado.php');
                                 tdSkusExternalId.classList.add(textCenter);
                                 row.appendChild(tdSkusExternalId);
 
+                                var tdTipoProducto = document.createElement('td');
+                                tdTipoProducto.textContent = item.TipoProducto;
+                                tdTipoProducto.classList.add(textCenter);
+                                row.appendChild(tdTipoProducto);
+
                                 var tdSkuName = document.createElement('td');
                                 tdSkuName.textContent = item.sku_name;
                                 row.appendChild(tdSkuName);
 
+                                var tdStock = document.createElement('td');
+                                tdStock.textContent = stock;
+                                tdStock.classList.add(textCenter);
+                                row.appendChild(tdStock);
+
                                 var tdCurrentTarget = document.createElement('td');
-                                tdCurrentTarget.textContent = item.current_target;
+                                tdCurrentTarget.textContent = currentTargetValue;
                                 tdCurrentTarget.classList.add(textCenter);
                                 row.appendChild(tdCurrentTarget);
 
@@ -661,16 +621,15 @@ require('opcionesFiltrado.php');
                             // Agregar todas las filas al cuerpo de la tabla de una vez
                             $('#dataTable tbody').append(fragment);
 
+                            $('.dataWrapper').show();
                             // Volver a inicializar DataTable con los nuevos datos
                             dataTableInstance = new DataTable('#dataTable', {
-                                // language: {
-                                //     search: 'Buscar: ',
-                                //     url: 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-MX.json'
-                                // },
                                 "columns": [
                                     { "width": "5%" },
                                     { "width": "15%" },
-                                    { "width": "62%" },
+                                    { "width": "10%" },
+                                    { "width": "47%" },
+                                    { "width": "5%" },
                                     { "width": "8%" },
                                     { "width": "5%" },
                                     { "width": "5%" },
@@ -689,7 +648,9 @@ require('opcionesFiltrado.php');
                                 "columns": [
                                     { "width": "5%" },
                                     { "width": "15%" },
-                                    { "width": "62%" },
+                                    { "width": "10%" },
+                                    { "width": "47%" },
+                                    { "width": "5%" },
                                     { "width": "8%" },
                                     { "width": "5%" },
                                     { "width": "5%" },

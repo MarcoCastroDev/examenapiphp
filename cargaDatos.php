@@ -57,16 +57,25 @@ try {
 	// Consulta para combinar datos del buffer y la tabla temporal de la API
 	$sqlCombinedData = "SELECT B.*, T.*
 							FROM $tempName T
-							inner JOIN (
-								SELECT ItemCode, Whscode, Buffer
-                                FROM (
-                                    SELECT LEFT(T0.ItemCode,20) ITEMCODE, LEFT(T1.WhsCode,8) WhsCode, T0.Buffer,
-                                        ROW_NUMBER() OVER (PARTITION BY T0.ItemCode, T1.WhsCode ORDER BY T0.ItemCode, T1.WhsCode, T0.Fecha DESC, T0.Hora DESC) Num
-                                    FROM SITI..BYS_Buffer T0 WITH (NOLOCK)
-                                    inner join BDGRUPOS_BUENA..OWHS T1 ON T1.WhsCode = T0.WhsCode 
-                                    WHERE T0.Fecha <= GETDATE() AND T0.Empresa = 'BDGRUPOS_BUENA'
-                                ) AS Z
-                                WHERE Z.NUM = 1
+							LEFT JOIN (
+								SELECT ItemCode, Whscode, Buffer, TipoProducto
+								FROM (
+									SELECT LEFT(T0.ItemCode,20) AS ITEMCODE, 
+										LEFT(T1.WhsCode,8) AS WhsCode, 
+										T0.Buffer, 
+										ROW_NUMBER() OVER (PARTITION BY T0.ItemCode, T1.WhsCode ORDER BY T0.ItemCode, T1.WhsCode, T0.Fecha DESC, T0.Hora DESC) AS Num, 
+									CASE 
+										WHEN T2.QryGroup4 = 'Y' THEN 'Accesorio' 
+										WHEN T2.QryGroup2 = 'Y' THEN 'Moda' 
+										WHEN T2.QryGroup1 = 'Y' THEN 'Linea' 
+										ELSE '' -- Puedes especificar un valor predeterminado o dejarlo en blanco según tus necesidades
+									END AS TipoProducto
+									FROM Siti.dbo.BYS_Buffer_Reporte_test T0 WITH (NOLOCK)
+									INNER JOIN BDGRUPOS_BUENA..OWHS T1 ON T1.WhsCode = T0.WhsCode 
+									INNER JOIN BDGRUPOS_BUENA..OITM T2 ON T2.ItemCode = T0.ItemCode
+									WHERE T0.Fecha <= GETDATE() AND T0.Empresa = 'BDGRUPOS_BUENA'
+								) AS Z
+								WHERE Z.NUM = 1
 							) B
 							ON B.Whscode COLLATE SQL_Latin1_General_CP1_CI_AS = T.locations_external_id COLLATE SQL_Latin1_General_CP1_CI_AS
 							AND B.ItemCode COLLATE SQL_Latin1_General_CP1_CI_AS = T.skus_external_id COLLATE SQL_Latin1_General_CP1_CI_AS";
